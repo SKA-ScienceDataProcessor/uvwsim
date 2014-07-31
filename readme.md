@@ -1,4 +1,4 @@
-# The uvwsim library (version 1.0)#
+# The uvwsim library (version 0.9)#
 
 
 ## Introduction ##
