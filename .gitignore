@@ -1,0 +1,6 @@
+.cproject
+.project
+.DS_Store
+.settings
+.pydevproject
+build
