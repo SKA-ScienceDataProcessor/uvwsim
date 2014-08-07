@@ -234,7 +234,7 @@ int main()
     uvwsim_convert_enu_to_ecef(nant, x, y, z, x, y, z, lon, lat, alt);
 
     // Define observation parameters. Observation of Ra,Dec=20,60 deg.
-    // for 15 times starting at 20/03/2014 14:57:1.3 for 1 hour.
+    // for 15 times starting at 20/03/2014 01:57:1.3 for 1 hour.
     double ra0  = 0.0 * (M_PI/180.);
     double dec0 = 90.0 * (M_PI/180.);
     int ntimes = 15;

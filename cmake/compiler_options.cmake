@@ -42,7 +42,12 @@ if (NOT WIN32)
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wextra")
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -pedantic")
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wcast-align")
-        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wcast-qual")
+        #set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wcast-qual")
+        # Warning suppressions for the Python interface (TODO: Fix these...).
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wno-unused-parameter")
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wno-unused-label")
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wno-long-long")
+
 
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden")
@@ -70,13 +75,12 @@ if (NOT WIN32)
     endif()
 else()
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-        # MSVC compiler - This is currnetly a placeholder.
+        # MSVC compiler - This is currently a placeholder.
     endif()
 endif()
 
 
-
-# Print some information on the build options. 
+# Print some information on the build options.
 if (BUILD_VERBOSE)
     message(STATUS "")
     message(STATUS "***********************************************************")
@@ -85,7 +89,7 @@ if (BUILD_VERBOSE)
         message(STATUS "Library type : shared")
     else()
         message(STATUS "Library type : static")
-    endif() 
+    endif()
     message(STATUS "C++ compiler : ${CMAKE_CXX_COMPILER}")
     message(STATUS "C compiler   : ${CMAKE_C_COMPILER}")
     message(STATUS "Compiler ID  : ${CMAKE_CXX_COMPILER_ID}")
@@ -104,4 +108,4 @@ if (BUILD_VERBOSE)
     endif()
     message(STATUS "***********************************************************")
     message(STATUS "")
-endif(BUILD_VERBOSE) 
+endif(BUILD_VERBOSE)

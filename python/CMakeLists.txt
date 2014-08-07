@@ -1,12 +1,14 @@
 find_package(PythonLibs 2.7)
+find_package(NumPy 1.8)
 
-# TODO Check if Python is found!
-
-include_directories(${PYTHON_INCLUDE_DIR})
-include_directories(${PROJECT_SOURCE_DIR}/src)
-include_directories(${PROJECT_SOURCE_DIR}/python/src)
-
-set(name pyuvwsim)
-add_library(${name} SHARED src/pyuvwsim.c)
-target_link_libraries(${name} ${PYTHON_LIBRARIES} uvwsim)
-set_target_properties(${name} PROPERTIES PREFIX "" SUFFIX .so)
+# If Python is found build the experimental python interface.
+if (PYTHONLIBS_FOUND AND NUMPY_FOUND)
+    include_directories(${PYTHON_INCLUDE_DIRS})
+    include_directories(${NUMPY_INCLUDE_DIRS})
+    include_directories(${PROJECT_SOURCE_DIR}/src)
+    include_directories(${PROJECT_SOURCE_DIR}/python/src)
+    set(name pyuvwsim)
+    add_library(${name} SHARED src/pyuvwsim.c)
+    target_link_libraries(${name} ${PYTHON_LIBRARIES} uvwsim)
+    set_target_properties(${name} PROPERTIES PREFIX "" SUFFIX .so)
+endif()

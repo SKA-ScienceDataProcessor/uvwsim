@@ -225,11 +225,16 @@ double uvwsim_datetime_to_mjd(int year, int month, int day, int hour,
 }
 
 /* http://goo.gl/LWf7Gz */
+/* http://msdn.microsoft.com/en-us/library/14h5k7ff.aspx */
 int UVWSIM_API uvwsim_file_exists(const char* filename)
 {
-    struct stat st;
-    int result = stat(filename, &st);
-    return result == 0;
+#if defined(UVWSIM_OS_WIN)
+    struct _stat buf;
+    return (_stat(filename, &buf) == 0);
+#else
+    struct stat buf;
+    return (stat(filename, &buf) == 0);
+#endif
 }
 
 /* Private functions ------------------------------------------------------- */

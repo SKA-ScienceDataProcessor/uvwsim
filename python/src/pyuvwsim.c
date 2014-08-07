@@ -33,50 +33,56 @@
 #include <uvwsim.h>
 #include <pyuvwsim.h>
 
-// http://docs.scipy.org/doc/numpy-dev/reference/c-api.deprecations.html
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+/* http://docs.scipy.org/doc/numpy-dev/reference/c-api.deprecations.html */
+#define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
 #include <numpy/arrayobject.h>
 
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
 
-// Error objects
+/* Error objects */
 static PyObject* pyuvwsimError;
 
 static PyObject* load_station_coords(PyObject* self, PyObject* args)
 {
-    // http://docs.scipy.org/doc/numpy/user/c-info.how-to-extend.html
-    // http://nedbatchelder.com/text/whirlext.html
-    // https://docs.python.org/2/extending/extending.html#intermezzo-errors-and-exceptions
-
+    /*
+     * http://docs.scipy.org/doc/numpy/user/c-info.how-to-extend.html
+     * http://nedbatchelder.com/text/whirlext.html
+     * https://docs.python.org/2/extending/extending.html#intermezzo-errors-and-exceptions
+     */
+    int n, nread;
+    npy_intp dims;
     const char* filename_ = 0;
+    PyObject *x_, *y_, *z_;
+    double *x, *y, *z;
+
     if (!PyArg_ParseTuple(args, "s", &filename_)) {
         return NULL;
     }
-    //printf("filename = %s\n", filename_);
+    /*printf("filename = %s\n", filename_);*/
 
-    // Check if the file exists
+    /* Check if the file exists */
     if (!uvwsim_file_exists(filename_)) {
         PyErr_SetString(pyuvwsimError, "Specified station (antenna) "
-            "layout file doesnt exist!");
+            "layout file doesn't exist!");
         return NULL;
     }
 
-    // Find number of stations and load station coordinates
-    int n = uvwsim_get_num_stations(filename_);
+    /* Find number of stations and load station coordinates */
+    n = uvwsim_get_num_stations(filename_);
 
-    // Allocate arrays to hold coordinates.
-    npy_intp dims = n;
-    PyObject* x_ = PyArray_SimpleNew(1, &dims, NPY_DOUBLE);
-    PyObject* y_ = PyArray_SimpleNew(1, &dims, NPY_DOUBLE);
-    PyObject* z_ = PyArray_SimpleNew(1, &dims, NPY_DOUBLE);
-    double* x = (double*)PyArray_DATA((PyArrayObject*)x_);
-    double* y = (double*)PyArray_DATA((PyArrayObject*)y_);
-    double* z = (double*)PyArray_DATA((PyArrayObject*)z_);
+    /* Allocate arrays to hold coordinates. */
+    dims = n;
+    x_ = PyArray_SimpleNew(1, &dims, NPY_DOUBLE);
+    y_ = PyArray_SimpleNew(1, &dims, NPY_DOUBLE);
+    z_ = PyArray_SimpleNew(1, &dims, NPY_DOUBLE);
+    x = (double*)PyArray_DATA((PyArrayObject*)x_);
+    y = (double*)PyArray_DATA((PyArrayObject*)y_);
+    z = (double*)PyArray_DATA((PyArrayObject*)z_);
 
-    // Read station coordiantes.
-    int nread = uvwsim_load_station_coords(filename_, n, x, y, z);
+    /* Read station coordinates. */
+    nread = uvwsim_load_station_coords(filename_, n, x, y, z);
     if (nread != n) {
         PyErr_SetString(pyuvwsimError, "Layout file read error. Incorrect "
             "number of station coordinates read.");
@@ -88,60 +94,68 @@ static PyObject* load_station_coords(PyObject* self, PyObject* args)
 
 static PyObject* convert_enu_to_ecef(PyObject* self, PyObject* args)
 {
-    // Read input arguments
-    PyObject *x_enu_o=NULL, *y_enu_o=NULL, *z_enu_o=NULL;
+    int typenum, requirements, nd, n;
     double lon, lat, alt;
+    PyObject *x_enu_o=NULL, *y_enu_o=NULL, *z_enu_o=NULL;
+    PyObject *x_enu_, *y_enu_, *z_enu_;
+    npy_intp* dims;
+    double *x_enu, *y_enu, *z_enu;
+    PyObject *x_ecef_, *y_ecef_, *z_ecef_;
+    double *x_ecef, *y_ecef, *z_ecef;
+
+    /* Read input arguments */
     if (!PyArg_ParseTuple(args, "O!O!O!ddd", &PyArray_Type, &x_enu_o,
         &PyArray_Type, &y_enu_o, &PyArray_Type, &z_enu_o,
         &lon, &lat, &alt)) return NULL;
-    // printf("lon: %lf deg.\n", lon*180./M_PI);
-    // printf("lat: %lf deg.\n", lat*180./M_PI);
-    // printf("alt: %lf m\n", alt);
+    /* printf("lon: %lf deg.\n", lon*180./M_PI); */
+    /* printf("lat: %lf deg.\n", lat*180./M_PI); */
+    /* printf("alt: %lf m\n", alt); */
 
-    // Convert python objects to array of specified builtin data-type.
-    int typenum = NPY_DOUBLE;
-    int requirements = NPY_IN_ARRAY; // == NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ALIGNED.
-    PyObject* x_enu_ = PyArray_FROM_OTF(x_enu_o, typenum, requirements);
+    /* Convert Python objects to array of specified built-in data-type. */
+    typenum = NPY_DOUBLE;
+    /*requirements = NPY_IN_ARRAY;*/
+    requirements = NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ALIGNED;
+    x_enu_ = PyArray_FROM_OTF(x_enu_o, typenum, requirements);
     if (!x_enu_) return NULL;
-    PyObject* y_enu_ = PyArray_FROM_OTF(y_enu_o, typenum, requirements);
+    y_enu_ = PyArray_FROM_OTF(y_enu_o, typenum, requirements);
     if (!y_enu_) return NULL;
-    PyObject* z_enu_ = PyArray_FROM_OTF(z_enu_o, typenum, requirements);
+    z_enu_ = PyArray_FROM_OTF(z_enu_o, typenum, requirements);
     if (!z_enu_) return NULL;
 
-    // Extract dimensions and pointers.
-    // TODO Require input arrays be 1D, and check dimension consistency.
-    int nd = PyArray_NDIM(x_enu_);
-    npy_intp* dims = PyArray_DIMS(x_enu_);
-    double* x_enu = (double*)PyArray_DATA(x_enu_);
-    double* y_enu = (double*)PyArray_DATA(y_enu_);
-    double* z_enu = (double*)PyArray_DATA(z_enu_);
-//    printf("x_enu: nd      = %i\n", nd);
-//    printf("x_enu: dims[0] = %li\n", dims[0]);
-//    printf("x_enu: [1-3]   = %lf, %lf, %lf\n", x_enu[0], x_enu[1], x_enu[2]);
+    /* Extract dimensions and pointers. */
+    /* TODO Require input arrays be 1D, and check dimension consistency. */
+    nd = PyArray_NDIM((PyArrayObject*)x_enu_);
+    dims = PyArray_DIMS((PyArrayObject*)x_enu_);
+    x_enu = (double*)PyArray_DATA((PyArrayObject*)x_enu_);
+    y_enu = (double*)PyArray_DATA((PyArrayObject*)y_enu_);
+    z_enu = (double*)PyArray_DATA((PyArrayObject*)z_enu_);
+    /* printf("x_enu: nd      = %i\n", nd); */
+    /* printf("x_enu: dims[0] = %li\n", dims[0]); */
+    /* printf("x_enu: [1-3]   = %lf, %lf, %lf\n", x_enu[0], x_enu[1], x_enu[2]); */
 
-    // Create New arrays for ECEF coordinates.
-    // TODO in-place option?!
-    PyObject* x_ecef_ = PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
-    PyObject* y_ecef_ = PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
-    PyObject* z_ecef_ = PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
-    double* x_ecef = (double*)PyArray_DATA((PyArrayObject*)x_ecef_);
-    double* y_ecef = (double*)PyArray_DATA((PyArrayObject*)y_ecef_);
-    double* z_ecef = (double*)PyArray_DATA((PyArrayObject*)z_ecef_);
+    /* Create New arrays for ECEF coordinates. */
+    /* TODO in-place option?! */
+    x_ecef_ = PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
+    y_ecef_ = PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
+    z_ecef_ = PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
+    x_ecef = (double*)PyArray_DATA((PyArrayObject*)x_ecef_);
+    y_ecef = (double*)PyArray_DATA((PyArrayObject*)y_ecef_);
+    z_ecef = (double*)PyArray_DATA((PyArrayObject*)z_ecef_);
 
-    // Call conversion function.
-    int n = dims[0];
+    /* Call conversion function. */
+    n = dims[0];
     uvwsim_convert_enu_to_ecef(n, x_ecef, y_ecef, z_ecef, x_enu,
             y_enu, z_enu, lon, lat, alt);
 
-    // Decrement references to temporary array objects.
+    /* Decrement references to temporary array objects. */
     Py_DECREF(x_enu_);
     Py_DECREF(y_enu_);
     Py_DECREF(z_enu_);
 
-    // Return station ECEF coordinates.
+    /* Return station ECEF coordinates. */
     return Py_BuildValue("OOO", x_ecef_, y_ecef_, z_ecef_);
 
-fail:  // On fail, ...?
+fail:  /* On fail, ...? */
     Py_XDECREF(x_enu_);
     Py_XDECREF(y_enu_);
     Py_XDECREF(z_enu_);
@@ -150,57 +164,66 @@ fail:  // On fail, ...?
 
 static PyObject* evaluate_baseline_uvw(PyObject* self, PyObject* args)
 {
-    // Read input arguments
+    int typenum, requirements, n;
     PyObject *x_ecef_o=NULL, *y_ecef_o=NULL, *z_ecef_o=NULL;
     double ra0, dec0, mjd;
+    PyObject *x_ecef_, *y_ecef_, *z_ecef_;
+    npy_intp* dims;
+    double *x_ecef, *y_ecef, *z_ecef;
+    npy_intp nb;
+    PyObject *uu_, *vv_, *ww_;
+    double *uu, *vv, *ww;
+
+    /* Read input arguments */
     if (!PyArg_ParseTuple(args, "O!O!O!ddd", &PyArray_Type, &x_ecef_o,
         &PyArray_Type, &y_ecef_o, &PyArray_Type, &z_ecef_o,
         &ra0, &dec0, &mjd)) return NULL;
-//    printf("ra0 : %lf deg.\n", ra0*180./M_PI);
-//    printf("dec0: %lf deg.\n", dec0*180./M_PI);
-//    printf("mjd : %lf\n", mjd);
+    /* printf("ra0 : %lf deg.\n", ra0*180./M_PI); */
+    /* printf("dec0: %lf deg.\n", dec0*180./M_PI); */
+    /* printf("mjd : %lf\n", mjd); */
 
-    // Convert python objects to array of specified builtin data-type.
-    int typenum = NPY_DOUBLE;
-    int requirements = NPY_IN_ARRAY; // == NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ALIGNED.
-    PyObject* x_ecef_ = PyArray_FROM_OTF(x_ecef_o, typenum, requirements);
+    /*  Convert Python objects to array of specified built-in data-type.*/
+    typenum = NPY_DOUBLE;
+    /*requirements = NPY_IN_ARRAY;*/
+    requirements = NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ALIGNED;
+    x_ecef_ = PyArray_FROM_OTF(x_ecef_o, typenum, requirements);
     if (!x_ecef_) return NULL;
-    PyObject* y_ecef_ = PyArray_FROM_OTF(y_ecef_o, typenum, requirements);
+    y_ecef_ = PyArray_FROM_OTF(y_ecef_o, typenum, requirements);
     if (!y_ecef_) return NULL;
-    PyObject* z_ecef_ = PyArray_FROM_OTF(z_ecef_o, typenum, requirements);
+    z_ecef_ = PyArray_FROM_OTF(z_ecef_o, typenum, requirements);
     if (!z_ecef_) return NULL;
 
-    // Extract dimensions and pointers.
-    // TODO Require input arrays be 1D, and check dimension consistency.
-    int nd = PyArray_NDIM(x_ecef_);
-    npy_intp* dims = PyArray_DIMS(x_ecef_);
-    double* x_ecef = (double*)PyArray_DATA(x_ecef_);
-    double* y_ecef = (double*)PyArray_DATA(y_ecef_);
-    double* z_ecef = (double*)PyArray_DATA(z_ecef_);
+    /* Extract dimensions and pointers. */
+    /* TODO Require input arrays be 1D, and check dimension consistency.
+     * int nd = PyArray_NDIM(x_ecef_); */
+    dims = PyArray_DIMS((PyArrayObject*)x_ecef_);
+    x_ecef = (double*)PyArray_DATA((PyArrayObject*)x_ecef_);
+    y_ecef = (double*)PyArray_DATA((PyArrayObject*)y_ecef_);
+    z_ecef = (double*)PyArray_DATA((PyArrayObject*)z_ecef_);
 
-    // Create New arrays for baseline coordinates.
-    int n = dims[0];
-    npy_intp nb = (n * (n-1)) / 2;
-    PyObject* uu_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
-    PyObject* vv_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
-    PyObject* ww_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
-    double* uu = (double*)PyArray_DATA((PyArrayObject*)uu_);
-    double* vv = (double*)PyArray_DATA((PyArrayObject*)vv_);
-    double* ww = (double*)PyArray_DATA((PyArrayObject*)ww_);
+    /* Create New arrays for baseline coordinates. */
+    n = dims[0];
+    nb = (n * (n-1)) / 2;
+    uu_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
+    vv_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
+    ww_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
+    uu = (double*)PyArray_DATA((PyArrayObject*)uu_);
+    vv = (double*)PyArray_DATA((PyArrayObject*)vv_);
+    ww = (double*)PyArray_DATA((PyArrayObject*)ww_);
 
-    // Call function to evaluate baseline uvw
+    /* Call function to evaluate baseline uvw */
     uvwsim_evaluate_baseline_uvw(uu, vv, ww, n, x_ecef, y_ecef, z_ecef,
         ra0, dec0, mjd);
 
-    // Decrement references to local array objects.
+    /* Decrement references to local array objects. */
     Py_DECREF(x_ecef_);
     Py_DECREF(y_ecef_);
     Py_DECREF(z_ecef_);
 
-    // Return baseline coordinates.
+    /* Return baseline coordinates. */
     return Py_BuildValue("OOO", uu_, vv_, ww_);
 
-fail: // On fail, ...?
+fail: /* On fail, ...? */
     Py_XDECREF(x_ecef_);
     Py_XDECREF(y_ecef_);
     Py_XDECREF(z_ecef_);
@@ -209,22 +232,23 @@ fail: // On fail, ...?
 
 static PyObject* datetime_to_mjd(PyObject* self, PyObject* args)
 {
-    // Read input arguments
+    /* Read input arguments */
     int year, month, day, hour, minute;
-    double seconds;
+    double seconds, mjd;
+
     if (!PyArg_ParseTuple(args, "iiiiid", &year, &month, &day, &hour, &minute,
         &seconds)) return NULL;
 
-    // Call conversion function.
-    double mjd = uvwsim_datetime_to_mjd(year, month, day, hour, minute, seconds);
+    /* Call conversion function. */
+    mjd = uvwsim_datetime_to_mjd(year, month, day, hour, minute, seconds);
 
-    // Return mjd.
+    /* Return mjd. */
     return Py_BuildValue("d", mjd);
 }
 
 
 
-// Method table.
+/* Method table. */
 static PyMethodDef pyuvwsim_funcs[] =
 {
     {
@@ -256,26 +280,27 @@ static PyMethodDef pyuvwsim_funcs[] =
     {NULL, NULL, 0, NULL}
 };
 
-// Initialisation function (called init[filename] where filename = name of *.so)
-// http://docs.scipy.org/doc/numpy/user/c-info.how-to-extend.html
+/* Initialisation function (called init[filename] where filename = name of *.so) */
+/* http://docs.scipy.org/doc/numpy/user/c-info.how-to-extend.html */
 PyMODINIT_FUNC PYUVWSIM_API initpyuvwsim()
 {
     PyObject* m = Py_InitModule3("pyuvwsim", pyuvwsim_funcs, "docstring...");
-    //(void) Py_InitModule3("pyuvwsim", pyuvwsim_funcs, "docstring...");
+    /* (void) Py_InitModule3("pyuvwsim", pyuvwsim_funcs, "docstring..."); */
 
-    // Import the use of numpy array objects.
+    /* Import the use of numpy array objects. */
     import_array();
 
-    // Create error objects and add them to the module.
+    /* Create error objects and add them to the module. */
     pyuvwsimError = PyErr_NewException("pyuvwsim.error", NULL, NULL);
     Py_INCREF(pyuvwsimError);
     PyModule_AddObject(m, "error", pyuvwsimError);
 
-    // PyObject* d = PyModule_GetDict(m);
-    //
-    // PyObject* tuple = Py_BuildValue("(ii)",
-    //     UVWSIM_VERSION_MAJOR,
-    //     UVWSIM_VERSION_MINOR);
-    // PyDict_SetItemString(d, "uvwsim_version", tuple);
-    // Py_DECREF(tuple);
+    /*
+    PyObject* d = PyModule_GetDict(m);
+    PyObject* tuple = Py_BuildValue("(ii)",
+        UVWSIM_VERSION_MAJOR,
+        UVWSIM_VERSION_MINOR);
+    PyDict_SetItemString(d, "uvwsim_version", tuple);
+    Py_DECREF(tuple);
+    */
 }
