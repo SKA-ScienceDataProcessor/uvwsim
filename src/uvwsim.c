@@ -90,7 +90,7 @@ int uvwsim_load_station_coords(const char* filename, int nant,
         /* Ignore comment lines (lines starting with '#') */
         if (line[0] == '#') continue;
 
-        read = uvwsim_string_to_array(line, sizeof(coords)/sizeof(double),coords);
+        read = uvwsim_string_to_array(line, sizeof(coords)/sizeof(double), coords);
 
         /* Stop reading if a line has less than two coordinates specified */
         if (read < 2) break;

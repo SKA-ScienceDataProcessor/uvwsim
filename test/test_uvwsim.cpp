@@ -55,7 +55,7 @@ TEST(uvwsim, get_num_stations)
     // Create a temporary station file with 3 columns.
     {
         int nant = deterministic ? 500 : (rand() % 500 + 1);
-        const char* filename = "TEMP_layout_xyz.txt";
+        const char* filename = "@PROJECT_BINARY_DIR@/test/TEMP_layout_xyz.txt";
         FILE* fp = fopen(filename, "w");
         fprintf(fp, "# This is a comment\n");
         fprintf(fp, "# This is a comment\n");
@@ -87,7 +87,7 @@ TEST(uvwsim, get_num_stations)
     // Create a temporary station file with 2 columns.
     {
         int nant = deterministic ? 500 : (rand() % 500 + 1);
-        const char* filename = "TEMP_layout_xy.txt";
+        const char* filename = "@PROJECT_BINARY_DIR@/test/TEMP_layout_xy.txt";
         FILE* fp = fopen(filename, "w");
         for (int i = 0; i < nant; ++i) {
             double x, y;
@@ -113,14 +113,14 @@ TEST(uvwsim, get_num_stations)
 
 #if HAVE_CASA_CFG_FILES
     {
-        const char* filename = "WSRT.cfg";
+        const char* filename = "@PROJECT_BINARY_DIR@/test/WSRT.cfg";
         ASSERT_TRUE(uvwsim_file_exists(filename))
         << "Unable to locate input layout file: " << filename << "\n";
         ASSERT_EQ(14, uvwsim_get_num_stations(filename));
     }
 
     {
-        const char* filename = "meerkat.cfg";
+        const char* filename = "@PROJECT_BINARY_DIR@/test/meerkat.cfg";
         ASSERT_TRUE(uvwsim_file_exists(filename))
         << "Unable to locate input layout file: " << filename << "\n";
         ASSERT_EQ(80, uvwsim_get_num_stations(filename));
@@ -136,7 +136,7 @@ TEST(uvwsim, load_station_coords)
     // Create a temporary station file with 3 columns.
     {
         int nant = deterministic ? 500 : (rand() % 500 + 1);
-        const char* filename = "TEMP_layout_xyz.txt";
+        const char* filename = "@PROJECT_BINARY_DIR@/test/TEMP_layout_xyz.txt";
         double* x_in = (double*)malloc(nant * sizeof(double));
         double* y_in = (double*)malloc(nant * sizeof(double));
         double* z_in = (double*)malloc(nant * sizeof(double));
@@ -182,7 +182,7 @@ TEST(uvwsim, load_station_coords)
     // Create a temporary station file with 2 columns.
     {
         int nant = deterministic ? 500 : (rand() % 500 + 1);
-        const char* filename = "TEMP_layout_xy.txt";
+        const char* filename = "@PROJECT_BINARY_DIR@/test/TEMP_layout_xy.txt";
         double* x_in = (double*)malloc(nant * sizeof(double));
         double* y_in = (double*)malloc(nant * sizeof(double));
         FILE* fp = fopen(filename, "w");
@@ -224,7 +224,7 @@ TEST(uvwsim, load_station_coords)
 
     // Configuration file using various allowed separators.
     {
-        const char* filename = "test_sep.cfg";
+        const char* filename = "@PROJECT_BINARY_DIR@/test/test_sep.cfg";
         int nant = 5;
         FILE* fp = fopen(filename, "w");
         // single comma & single space.
@@ -328,7 +328,7 @@ TEST(uvwsim, evaluate_uvw_vla_a_hor)
     srand(time(NULL));
 
     {
-        const char* layout_file = "VLA_A_hor_xyz.txt";
+        const char* layout_file = "@PROJECT_BINARY_DIR@/test/VLA_A_hor_xyz.txt";
         ASSERT_TRUE(uvwsim_file_exists(layout_file))
             << "Unable to locate input layout file: " << layout_file << "\n";
 
@@ -368,7 +368,7 @@ TEST(uvwsim, evaluate_uvw_vla_a_hor)
 
         /* Save baseline coordinates in metres */
         {
-            const char* uvw_file = "TEMP_VLA_A_uvw_metres.csv";
+            const char* uvw_file = "@PROJECT_BINARY_DIR@/test/TEMP_VLA_A_uvw_metres.csv";
             FILE* fp = fopen(uvw_file, "w");
             for (int i = 0; i < ncoords; ++i) {
                 fprintf(fp, "%f,%f,%f\n", uu[i], vv[i], ww[i]);
@@ -381,7 +381,7 @@ TEST(uvwsim, evaluate_uvw_vla_a_hor)
 
         /* Save frequency scaled baseline coordinates */
         {
-            const char* uvw_file = "TEMP_VLA_A_uvw_wavelengths.csv";
+            const char* uvw_file = "@PROJECT_BINARY_DIR@/test/TEMP_VLA_A_uvw_wavelengths.csv";
             FILE* fp = fopen(uvw_file, "w");
             double freq_inc = (end_freq-start_freq)/(double)nchan;
             const double c0 = 299792458.0;
@@ -425,7 +425,7 @@ TEST(uvwsim, evaluate_uvw_vla_a_itrf)
     srand(time(NULL));
 
     {
-        const char* layout_file = "vla.a.cfg";
+        const char* layout_file = "@PROJECT_BINARY_DIR@/test/vla.a.cfg";
         ASSERT_TRUE(uvwsim_file_exists(layout_file))
         << "Unable to locate input layout file: " << layout_file << "\n";
 
@@ -461,7 +461,7 @@ TEST(uvwsim, evaluate_uvw_vla_a_itrf)
 
         /* Save baseline coordinates in metres */
         {
-            const char* uvw_file = "TEMP_VLA_A_2_uvw_metres.csv";
+            const char* uvw_file = "@PROJECT_BINARY_DIR@/test/TEMP_VLA_A_2_uvw_metres.csv";
             FILE* fp = fopen(uvw_file, "w");
             for (int i = 0; i < ncoords; ++i) {
                 fprintf(fp, "%f,%f,%f\n", uu[i], vv[i], ww[i]);
@@ -474,7 +474,7 @@ TEST(uvwsim, evaluate_uvw_vla_a_itrf)
 
         /* Save frequency scaled baseline coordinates */
         {
-            const char* uvw_file = "TEMP_VLA_A_2_uvw_wavelengths.csv";
+            const char* uvw_file = "@PROJECT_BINARY_DIR@/test/TEMP_VLA_A_2_uvw_wavelengths.csv";
             FILE* fp = fopen(uvw_file, "w");
             double freq_inc = (end_freq-start_freq)/(double)nchan;
             const double c0 = 299792458.0;

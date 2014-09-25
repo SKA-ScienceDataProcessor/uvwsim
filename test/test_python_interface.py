@@ -1,4 +1,5 @@
 
+# TODO put try, catch around imports ...
 import numpy as np
 import pyuvwsim as uvw
 
@@ -6,9 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import time
 
-#filename='meerkat.cfg'
-#filename='vla.a.cfg'
-filename='VLA_A_hor_xyz.txt'
+filename='@PROJECT_BINARY_DIR@/test/VLA_A_hor_xyz.txt'
 lon  = 0.0  * (np.pi/180.)
 lat  = 90.0 * (np.pi/180.)
 alt  = 0.0

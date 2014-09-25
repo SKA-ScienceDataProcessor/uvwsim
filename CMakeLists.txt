@@ -4,8 +4,8 @@ if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" VERSION_GREATER 2.8)
     cmake_policy(SET CMP0042 OLD)
 endif()
 
-set(UVWSIM_VERSION_MAJOR 0)
-set(UVWSIM_VERSION_MINOR 9)
+set(UVWSIM_VERSION_MAJOR 1)
+set(UVWSIM_VERSION_MINOR 0)
 set(UVWSIM_VERSION "${UVWSIM_VERSION_MAJOR}.${UVWSIM_VERSION_MINOR}")
 
 # Add the local cmake directory into the module path.
@@ -21,9 +21,9 @@ add_library(${libname} src/uvwsim.c)
 install(TARGETS ${libname} DESTINATION ${UVWSIM_LIB_INSTALL_DIR})
 install(FILES src/uvwsim.h DESTINATION ${UVWSIM_INCLUDE_INSTALL_DIR})
 
+# Build the python interface (if python [2.7] and numpy [1.8] is found)
+# add_subdirectory(python)
+
 # Build unit tests
 enable_testing()
 add_subdirectory(test)
-
-# Build the python interface (if python [2.7] and numpy [1.8] is found)
-#add_subdirectory(python)

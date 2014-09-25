@@ -3,6 +3,7 @@ find_package(NumPy 1.8)
 
 # If Python is found build the experimental python interface.
 if (PYTHONLIBS_FOUND AND NUMPY_FOUND)
+    set(UVWSIM_PYTHON_API ON PARENT_SCOPE)
     include_directories(${PYTHON_INCLUDE_DIRS})
     include_directories(${NUMPY_INCLUDE_DIRS})
     include_directories(${PROJECT_SOURCE_DIR}/src)

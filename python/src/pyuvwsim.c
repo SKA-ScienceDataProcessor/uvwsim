@@ -113,7 +113,7 @@ static PyObject* convert_enu_to_ecef(PyObject* self, PyObject* args)
 
     /* Convert Python objects to array of specified built-in data-type. */
     typenum = NPY_DOUBLE;
-    /*requirements = NPY_IN_ARRAY;*/
+    /*requirements = NPY_IN_ARRAY; FIXME Python version check macro? */
     requirements = NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ALIGNED;
     x_enu_ = PyArray_FROM_OTF(x_enu_o, typenum, requirements);
     if (!x_enu_) return NULL;
@@ -184,7 +184,7 @@ static PyObject* evaluate_baseline_uvw(PyObject* self, PyObject* args)
 
     /*  Convert Python objects to array of specified built-in data-type.*/
     typenum = NPY_DOUBLE;
-    /*requirements = NPY_IN_ARRAY;*/
+    /* requirements = NPY_IN_ARRAY; FIXME Python version check macro? */
     requirements = NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ALIGNED;
     x_ecef_ = PyArray_FROM_OTF(x_ecef_o, typenum, requirements);
     if (!x_ecef_) return NULL;
