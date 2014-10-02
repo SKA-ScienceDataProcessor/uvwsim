@@ -24,7 +24,7 @@ if (UVWSIM_PYTHON_API)
         ${CMAKE_CURRENT_SOURCE_DIR}/test_python_interface.py
         ${CMAKE_CURRENT_BINARY_DIR}/test_python_interface.py @ONLY)
     configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/run_python_tests.sh 
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_python_tests.sh
         ${CMAKE_CURRENT_BINARY_DIR}/run_python_tests.sh @ONLY)
 endif()
 

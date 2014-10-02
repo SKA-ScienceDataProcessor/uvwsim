@@ -44,6 +44,13 @@
 /* Error objects */
 static PyObject* pyuvwsimError;
 
+/**
+ * @brief Function to load station coordinates.
+ * @details
+ * This function loads coordinates from a specified layout file, returning
+ * them as NumPy arrays. This function is a wrapper to
+ * uvwsim_load_station_coords().
+ */
 static PyObject* load_station_coords(PyObject* self, PyObject* args)
 {
     /*
@@ -60,7 +67,6 @@ static PyObject* load_station_coords(PyObject* self, PyObject* args)
     if (!PyArg_ParseTuple(args, "s", &filename_)) {
         return NULL;
     }
-    /*printf("filename = %s\n", filename_);*/
 
     /* Check if the file exists */
     if (!uvwsim_file_exists(filename_)) {
@@ -86,12 +92,26 @@ static PyObject* load_station_coords(PyObject* self, PyObject* args)
     if (nread != n) {
         PyErr_SetString(pyuvwsimError, "Layout file read error. Incorrect "
             "number of station coordinates read.");
+        Py_DECREF(x_);
+        Py_DECREF(y_);
+        Py_DECREF(z_);
         return NULL;
     }
 
-    return Py_BuildValue("OOO", x_, y_, z_);
+    /*printf("  - ref count: x_:%zi, y_:%zi, z_:%zi\n", PyArray_REFCOUNT(x_),
+            PyArray_REFCOUNT(x_),PyArray_REFCOUNT(x_));*/
+
+    /* 'O' increases reference count by 1, 'N' doesn't */
+    /* https://docs.python.org/2.0/ext/buildValue.html */
+    return Py_BuildValue("NNN", x_, y_, z_);
 }
 
+
+/**
+ * @brief Function to convert coordinates from an ENU to an ECEF frame.
+ * @details
+ * This function is a wrapper to uvwsim_convert_enu_to_ecef()
+ */
 static PyObject* convert_enu_to_ecef(PyObject* self, PyObject* args)
 {
     int typenum, requirements, nd, n;
@@ -103,38 +123,60 @@ static PyObject* convert_enu_to_ecef(PyObject* self, PyObject* args)
     PyObject *x_ecef_, *y_ecef_, *z_ecef_;
     double *x_ecef, *y_ecef, *z_ecef;
 
-    /* Read input arguments */
-    if (!PyArg_ParseTuple(args, "O!O!O!ddd", &PyArray_Type, &x_enu_o,
-        &PyArray_Type, &y_enu_o, &PyArray_Type, &z_enu_o,
-        &lon, &lat, &alt)) return NULL;
-    /* printf("lon: %lf deg.\n", lon*180./M_PI); */
-    /* printf("lat: %lf deg.\n", lat*180./M_PI); */
-    /* printf("alt: %lf m\n", alt); */
+    /* if (NPY_VERSION == 0x01000009) printf("INFO: Numpy version 1.9\n"); */
 
-    /* Convert Python objects to array of specified built-in data-type. */
+    /* Read input arguments */
+    if (!PyArg_ParseTuple(args, "O!O!O!ddd",
+        &PyArray_Type, &x_enu_o,
+        &PyArray_Type, &y_enu_o,
+        &PyArray_Type, &z_enu_o,
+        &lon, &lat, &alt)
+    ) return NULL;
+
+    /*
+    printf("  - A ref count: x_enu_o:%zi, y_enu_o:%zi, z_enu_o:%zi\n",
+            PyArray_REFCOUNT(x_enu_o),
+            PyArray_REFCOUNT(y_enu_o),
+            PyArray_REFCOUNT(z_enu_o));
+    */
+
+    /* PyArray_FROM_OTF is a macro calling PyArray_FromAny
+     * http://docs.scipy.org/doc/numpy/user/c-info.how-to-extend.html
+     *
+     * It returns an ndarray object from any Python object.
+     * that can be converted to an array.
+     * arguments: object, typenum, requirements
+     *  - typenum:      the desired type of the returned array.
+     */
     typenum = NPY_DOUBLE;
-    /*requirements = NPY_IN_ARRAY; FIXME Python version check macro? */
-    requirements = NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ALIGNED;
+    requirements = NPY_ARRAY_IN_ARRAY;
     x_enu_ = PyArray_FROM_OTF(x_enu_o, typenum, requirements);
-    if (!x_enu_) return NULL;
+    if (!x_enu_) goto fail;
     y_enu_ = PyArray_FROM_OTF(y_enu_o, typenum, requirements);
-    if (!y_enu_) return NULL;
+    if (!y_enu_) goto fail;
     z_enu_ = PyArray_FROM_OTF(z_enu_o, typenum, requirements);
-    if (!z_enu_) return NULL;
+    if (!z_enu_) goto fail;
+
+    /*
+    printf("  - B ref count: x_enu_:%zi, y_enu_:%zi, z_enu_:%zi\n",
+            PyArray_REFCOUNT(x_enu_),
+            PyArray_REFCOUNT(y_enu_),
+            PyArray_REFCOUNT(z_enu_));
+    printf("  - C ref count: x_enu_o:%zi, y_enu_o:%zi, z_enu_o:%zi\n",
+            PyArray_REFCOUNT(x_enu_o),
+            PyArray_REFCOUNT(y_enu_o),
+            PyArray_REFCOUNT(z_enu_o));
+    */
 
     /* Extract dimensions and pointers. */
     /* TODO Require input arrays be 1D, and check dimension consistency. */
-    nd = PyArray_NDIM((PyArrayObject*)x_enu_);
-    dims = PyArray_DIMS((PyArrayObject*)x_enu_);
+    nd    = PyArray_NDIM((PyArrayObject*)x_enu_);
+    dims  = PyArray_DIMS((PyArrayObject*)x_enu_);
     x_enu = (double*)PyArray_DATA((PyArrayObject*)x_enu_);
     y_enu = (double*)PyArray_DATA((PyArrayObject*)y_enu_);
     z_enu = (double*)PyArray_DATA((PyArrayObject*)z_enu_);
-    /* printf("x_enu: nd      = %i\n", nd); */
-    /* printf("x_enu: dims[0] = %li\n", dims[0]); */
-    /* printf("x_enu: [1-3]   = %lf, %lf, %lf\n", x_enu[0], x_enu[1], x_enu[2]); */
 
     /* Create New arrays for ECEF coordinates. */
-    /* TODO in-place option?! */
     x_ecef_ = PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
     y_ecef_ = PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
     z_ecef_ = PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
@@ -147,15 +189,29 @@ static PyObject* convert_enu_to_ecef(PyObject* self, PyObject* args)
     uvwsim_convert_enu_to_ecef(n, x_ecef, y_ecef, z_ecef, x_enu,
             y_enu, z_enu, lon, lat, alt);
 
+    /*
+    printf("  - D ref count: x_enu_:%zi, y_enu_:%zi, z_enu_:%zi\n",
+            PyArray_REFCOUNT(x_enu_),
+            PyArray_REFCOUNT(y_enu_),
+            PyArray_REFCOUNT(z_enu_));
+   */
+
     /* Decrement references to temporary array objects. */
-    Py_DECREF(x_enu_);
-    Py_DECREF(y_enu_);
-    Py_DECREF(z_enu_);
+    Py_XDECREF(x_enu_);
+    Py_XDECREF(y_enu_);
+    Py_XDECREF(z_enu_);
+
+    /*
+    printf("  - E ref count: x_ecef_:%zi, y_ecef_:%zi, z_ecef_:%zi\n",
+            PyArray_REFCOUNT(x_ecef_),
+            PyArray_REFCOUNT(y_ecef_),
+            PyArray_REFCOUNT(z_ecef_));
+    */
 
     /* Return station ECEF coordinates. */
-    return Py_BuildValue("OOO", x_ecef_, y_ecef_, z_ecef_);
+    return Py_BuildValue("NNN", x_ecef_, y_ecef_, z_ecef_);
 
-fail:  /* On fail, ...? */
+fail:
     Py_XDECREF(x_enu_);
     Py_XDECREF(y_enu_);
     Py_XDECREF(z_enu_);
@@ -178,20 +234,23 @@ static PyObject* evaluate_baseline_uvw(PyObject* self, PyObject* args)
     if (!PyArg_ParseTuple(args, "O!O!O!ddd", &PyArray_Type, &x_ecef_o,
         &PyArray_Type, &y_ecef_o, &PyArray_Type, &z_ecef_o,
         &ra0, &dec0, &mjd)) return NULL;
-    /* printf("ra0 : %lf deg.\n", ra0*180./M_PI); */
-    /* printf("dec0: %lf deg.\n", dec0*180./M_PI); */
-    /* printf("mjd : %lf\n", mjd); */
 
     /*  Convert Python objects to array of specified built-in data-type.*/
     typenum = NPY_DOUBLE;
-    /* requirements = NPY_IN_ARRAY; FIXME Python version check macro? */
-    requirements = NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ALIGNED;
+    requirements = NPY_ARRAY_IN_ARRAY;
     x_ecef_ = PyArray_FROM_OTF(x_ecef_o, typenum, requirements);
-    if (!x_ecef_) return NULL;
+    if (!x_ecef_) goto fail;
     y_ecef_ = PyArray_FROM_OTF(y_ecef_o, typenum, requirements);
-    if (!y_ecef_) return NULL;
+    if (!y_ecef_) goto fail;
     z_ecef_ = PyArray_FROM_OTF(z_ecef_o, typenum, requirements);
-    if (!z_ecef_) return NULL;
+    if (!z_ecef_) goto fail;
+
+    /*
+    printf("  - A ref count: x_ecef_:%zi, y_ecef_:%zi, z_ecef_:%zi\n",
+        PyArray_REFCOUNT(x_ecef_),
+        PyArray_REFCOUNT(y_ecef_),
+        PyArray_REFCOUNT(z_ecef_));
+    */
 
     /* Extract dimensions and pointers. */
     /* TODO Require input arrays be 1D, and check dimension consistency.
@@ -202,28 +261,42 @@ static PyObject* evaluate_baseline_uvw(PyObject* self, PyObject* args)
     z_ecef = (double*)PyArray_DATA((PyArrayObject*)z_ecef_);
 
     /* Create New arrays for baseline coordinates. */
-    n = dims[0];
-    nb = (n * (n-1)) / 2;
+    n   = dims[0];
+    nb  = (n * (n-1)) / 2;
     uu_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
     vv_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
     ww_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
-    uu = (double*)PyArray_DATA((PyArrayObject*)uu_);
-    vv = (double*)PyArray_DATA((PyArrayObject*)vv_);
-    ww = (double*)PyArray_DATA((PyArrayObject*)ww_);
+    uu  = (double*)PyArray_DATA((PyArrayObject*)uu_);
+    vv  = (double*)PyArray_DATA((PyArrayObject*)vv_);
+    ww  = (double*)PyArray_DATA((PyArrayObject*)ww_);
+
+    /*
+    printf("  - B ref count: uu_:%zi, vv_:%zi, ww_:%zi\n",
+            PyArray_REFCOUNT(uu_),
+            PyArray_REFCOUNT(vv_),
+            PyArray_REFCOUNT(ww_));
+    */
 
     /* Call function to evaluate baseline uvw */
     uvwsim_evaluate_baseline_uvw(uu, vv, ww, n, x_ecef, y_ecef, z_ecef,
         ra0, dec0, mjd);
 
     /* Decrement references to local array objects. */
-    Py_DECREF(x_ecef_);
-    Py_DECREF(y_ecef_);
-    Py_DECREF(z_ecef_);
+    Py_XDECREF(x_ecef_);
+    Py_XDECREF(y_ecef_);
+    Py_XDECREF(z_ecef_);
+
+    /*
+    printf("  - C ref count: x_ecef_:%zi, y_ecef_:%zi, z_ecef_:%zi\n",
+            PyArray_REFCOUNT(x_ecef_),
+            PyArray_REFCOUNT(x_ecef_),
+            PyArray_REFCOUNT(x_ecef_));
+    */
 
     /* Return baseline coordinates. */
-    return Py_BuildValue("OOO", uu_, vv_, ww_);
+    return Py_BuildValue("NNN", uu_, vv_, ww_);
 
-fail: /* On fail, ...? */
+fail:
     Py_XDECREF(x_ecef_);
     Py_XDECREF(y_ecef_);
     Py_XDECREF(z_ecef_);
@@ -246,7 +319,15 @@ static PyObject* datetime_to_mjd(PyObject* self, PyObject* args)
     return Py_BuildValue("d", mjd);
 }
 
-
+static PyObject* check_ref_count(PyObject* self, PyObject* args)
+{
+    PyObject* obj = NULL;
+    /* https://docs.python.org/2/c-api/arg.html */
+    /* Reference count is not increased by 'O' for PyArg_ParseTyple */
+    if (!PyArg_ParseTuple(args, "O", &obj))
+        return NULL;
+    return Py_BuildValue("ii", PyArray_REFCOUNT(obj), Py_REFCNT(obj));
+}
 
 /* Method table. */
 static PyMethodDef pyuvwsim_funcs[] =
@@ -277,6 +358,12 @@ static PyMethodDef pyuvwsim_funcs[] =
         "mjd = datetime_to_mjd(year, month, day, hour, minute, seconds)\n"
         "Convert datetime to Modified Julian date.\n"
     },
+    {
+        "check_ref_count",
+        (PyCFunction)check_ref_count, METH_VARARGS,
+        "count = check_ref_count(PyObject)\n"
+        "Check the reference count of a python object\n"
+    },
     {NULL, NULL, 0, NULL}
 };
 
@@ -284,23 +371,20 @@ static PyMethodDef pyuvwsim_funcs[] =
 /* http://docs.scipy.org/doc/numpy/user/c-info.how-to-extend.html */
 PyMODINIT_FUNC PYUVWSIM_API initpyuvwsim()
 {
-    PyObject* m = Py_InitModule3("pyuvwsim", pyuvwsim_funcs, "docstring...");
-    /* (void) Py_InitModule3("pyuvwsim", pyuvwsim_funcs, "docstring..."); */
-
     /* Import the use of numpy array objects. */
     import_array();
 
+    PyObject* m = Py_InitModule3("pyuvwsim", pyuvwsim_funcs, "docstring...");
+
     /* Create error objects and add them to the module. */
     pyuvwsimError = PyErr_NewException("pyuvwsim.error", NULL, NULL);
-    Py_INCREF(pyuvwsimError);
+    /*
+    printf("pyuvwsimError reference count = %zi\n", Py_REFCNT(pyuvwsimError));
+    Py_DECREF(pyuvwsimError);
+    Py_DECREF(pyuvwsimError);
+    */
     PyModule_AddObject(m, "error", pyuvwsimError);
 
-    /*
-    PyObject* d = PyModule_GetDict(m);
-    PyObject* tuple = Py_BuildValue("(ii)",
-        UVWSIM_VERSION_MAJOR,
-        UVWSIM_VERSION_MINOR);
-    PyDict_SetItemString(d, "uvwsim_version", tuple);
-    Py_DECREF(tuple);
-    */
+    PyModule_AddStringConstant(m, "__version__", "@UVWSIM_VERSION@\0");
+    /*printf("  - ref count m: %zi\n", Py_REFCNT(m));*/
 }
