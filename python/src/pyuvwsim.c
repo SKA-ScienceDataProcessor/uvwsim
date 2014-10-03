@@ -42,7 +42,7 @@
 #include <string.h>
 
 /* Error objects */
-static PyObject* pyuvwsimError;
+/*static PyObject* pyuvwsimError;*/
 
 /**
  * @brief Function to load station coordinates.
@@ -70,8 +70,12 @@ static PyObject* load_station_coords(PyObject* self, PyObject* args)
 
     /* Check if the file exists */
     if (!uvwsim_file_exists(filename_)) {
+        PyErr_SetString(PyExc_RuntimeError, "Specified station (antenna) "
+                "layout file doesn't exist!");
+        /*
         PyErr_SetString(pyuvwsimError, "Specified station (antenna) "
             "layout file doesn't exist!");
+        */
         return NULL;
     }
 
@@ -90,8 +94,12 @@ static PyObject* load_station_coords(PyObject* self, PyObject* args)
     /* Read station coordinates. */
     nread = uvwsim_load_station_coords(filename_, n, x, y, z);
     if (nread != n) {
-        PyErr_SetString(pyuvwsimError, "Layout file read error. Incorrect "
-            "number of station coordinates read.");
+        PyErr_SetString(PyExc_RuntimeError, "Layout file read error. Incorrect "
+                "number of station coordinates read.");
+        /*
+         PyErr_SetString(pyuvwsimError, "Layout file read error. Incorrect "
+             "number of station coordinates read.");
+         */
         Py_DECREF(x_);
         Py_DECREF(y_);
         Py_DECREF(z_);
@@ -142,11 +150,7 @@ static PyObject* convert_enu_to_ecef(PyObject* self, PyObject* args)
 
     /* PyArray_FROM_OTF is a macro calling PyArray_FromAny
      * http://docs.scipy.org/doc/numpy/user/c-info.how-to-extend.html
-     *
-     * It returns an ndarray object from any Python object.
-     * that can be converted to an array.
-     * arguments: object, typenum, requirements
-     *  - typenum:      the desired type of the returned array.
+     * It converts an arbitrary Python object to a well-behaved numpy array.
      */
     typenum = NPY_DOUBLE;
     requirements = NPY_ARRAY_IN_ARRAY;
@@ -197,9 +201,9 @@ static PyObject* convert_enu_to_ecef(PyObject* self, PyObject* args)
    */
 
     /* Decrement references to temporary array objects. */
-    Py_XDECREF(x_enu_);
-    Py_XDECREF(y_enu_);
-    Py_XDECREF(z_enu_);
+    Py_DECREF(x_enu_);
+    Py_DECREF(y_enu_);
+    Py_DECREF(z_enu_);
 
     /*
     printf("  - E ref count: x_ecef_:%zi, y_ecef_:%zi, z_ecef_:%zi\n",
@@ -282,9 +286,9 @@ static PyObject* evaluate_baseline_uvw(PyObject* self, PyObject* args)
         ra0, dec0, mjd);
 
     /* Decrement references to local array objects. */
-    Py_XDECREF(x_ecef_);
-    Py_XDECREF(y_ecef_);
-    Py_XDECREF(z_ecef_);
+    Py_DECREF(x_ecef_);
+    Py_DECREF(y_ecef_);
+    Py_DECREF(z_ecef_);
 
     /*
     printf("  - C ref count: x_ecef_:%zi, y_ecef_:%zi, z_ecef_:%zi\n",
@@ -319,6 +323,7 @@ static PyObject* datetime_to_mjd(PyObject* self, PyObject* args)
     return Py_BuildValue("d", mjd);
 }
 
+#if 0
 static PyObject* check_ref_count(PyObject* self, PyObject* args)
 {
     PyObject* obj = NULL;
@@ -328,9 +333,10 @@ static PyObject* check_ref_count(PyObject* self, PyObject* args)
         return NULL;
     return Py_BuildValue("ii", PyArray_REFCOUNT(obj), Py_REFCNT(obj));
 }
+#endif
 
 /* Method table. */
-static PyMethodDef pyuvwsim_funcs[] =
+static PyMethodDef pyuvwsimMethods[] =
 {
     {
         "load_station_coords",
@@ -358,12 +364,14 @@ static PyMethodDef pyuvwsim_funcs[] =
         "mjd = datetime_to_mjd(year, month, day, hour, minute, seconds)\n"
         "Convert datetime to Modified Julian date.\n"
     },
+#if 0
     {
         "check_ref_count",
         (PyCFunction)check_ref_count, METH_VARARGS,
         "count = check_ref_count(PyObject)\n"
         "Check the reference count of a python object\n"
     },
+#endif
     {NULL, NULL, 0, NULL}
 };
 
@@ -371,20 +379,26 @@ static PyMethodDef pyuvwsim_funcs[] =
 /* http://docs.scipy.org/doc/numpy/user/c-info.how-to-extend.html */
 PyMODINIT_FUNC PYUVWSIM_API initpyuvwsim()
 {
-    /* Import the use of numpy array objects. */
-    import_array();
-
-    PyObject* m = Py_InitModule3("pyuvwsim", pyuvwsim_funcs, "docstring...");
+    /*
+     * TODO C module name should probably be _pyuvwsim with a python
+     * interface on top of this (with the usual __init__.py method etc.)
+     */
+    /*PyObject* m = Py_InitModule3("pyuvwsim", pyuvwsim_funcs, "docstring...");*/
+    PyObject* m = Py_InitModule("pyuvwsim", pyuvwsimMethods);
+    if (!m) return;
 
     /* Create error objects and add them to the module. */
+    /* https://docs.python.org/2/extending/extending.html#intermezzo-errors-and-exceptions*/
+    #if 0
     pyuvwsimError = PyErr_NewException("pyuvwsim.error", NULL, NULL);
-    /*
-    printf("pyuvwsimError reference count = %zi\n", Py_REFCNT(pyuvwsimError));
-    Py_DECREF(pyuvwsimError);
-    Py_DECREF(pyuvwsimError);
-    */
+    Py_INCREF(pyuvwsimError);
+    /*printf("pyuvwsimError reference count = %zi\n", Py_REFCNT(pyuvwsimError));*/
     PyModule_AddObject(m, "error", pyuvwsimError);
+    #endif
 
     PyModule_AddStringConstant(m, "__version__", "@UVWSIM_VERSION@\0");
     /*printf("  - ref count m: %zi\n", Py_REFCNT(m));*/
+
+    /* Import the use of numpy array objects. */
+    import_array();
 }
