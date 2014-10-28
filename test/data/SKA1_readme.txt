@@ -7,10 +7,12 @@
 #
 
 def convert_layout(file_in, file_out):
+
+    import numpy as np
+
     layout = np.genfromtxt(file_in, dtype=np.double, delimiter=',')
 
     layout_itrf = np.zeros((len(layout),3), dtype=np.double)
-    print x.shape
 
     for i in range(0, len(layout)):
         lon = layout[i,0]
