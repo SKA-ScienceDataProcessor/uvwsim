@@ -1,0 +1,2 @@
+include copying.txt pyuvwsim.rst
+graft src

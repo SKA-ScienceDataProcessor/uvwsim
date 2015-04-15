@@ -23,7 +23,7 @@ install(FILES src/uvwsim.h DESTINATION ${UVWSIM_INCLUDE_INSTALL_DIR})
 
 # Build the python interface (if python [2.7] and numpy [1.8] is found)
 # NOTE: Current disabled as this is very experimental.
-#add_subdirectory(python)
+# add_subdirectory(pyuvwsim)
 
 # Build unit tests
 enable_testing()

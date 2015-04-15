@@ -4,3 +4,5 @@
 .settings
 .pydevproject
 build
+dist
+pyuvwsim.egg-info

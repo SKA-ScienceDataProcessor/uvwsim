@@ -31,7 +31,6 @@
 
 #include <Python.h>
 #include <uvwsim.h>
-#include <pyuvwsim.h>
 
 /* http://docs.scipy.org/doc/numpy-dev/reference/c-api.deprecations.html */
 #define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
@@ -125,10 +124,10 @@ static PyObject* convert_enu_to_ecef(PyObject* self, PyObject* args)
     int typenum, requirements, nd, n;
     double lon, lat, alt;
     PyObject *x_enu_o=NULL, *y_enu_o=NULL, *z_enu_o=NULL;
-    PyObject *x_enu_, *y_enu_, *z_enu_;
+    PyObject *x_enu_=NULL, *y_enu_=NULL, *z_enu_=NULL;
     npy_intp* dims;
     double *x_enu, *y_enu, *z_enu;
-    PyObject *x_ecef_, *y_ecef_, *z_ecef_;
+    PyObject *x_ecef_=NULL, *y_ecef_=NULL, *z_ecef_=NULL;
     double *x_ecef, *y_ecef, *z_ecef;
 
     /* if (NPY_VERSION == 0x01000009) printf("INFO: Numpy version 1.9\n"); */
@@ -227,7 +226,7 @@ static PyObject* evaluate_baseline_uvw(PyObject* self, PyObject* args)
     int typenum, requirements, n;
     PyObject *x_ecef_o=NULL, *y_ecef_o=NULL, *z_ecef_o=NULL;
     double ra0, dec0, mjd;
-    PyObject *x_ecef_, *y_ecef_, *z_ecef_;
+    PyObject *x_ecef_=NULL, *y_ecef_=NULL, *z_ecef_=NULL;
     npy_intp* dims;
     double *x_ecef, *y_ecef, *z_ecef;
     npy_intp nb;
@@ -336,7 +335,7 @@ static PyObject* check_ref_count(PyObject* self, PyObject* args)
 #endif
 
 /* Method table. */
-static PyMethodDef pyuvwsimMethods[] =
+static PyMethodDef methods[] =
 {
     {
         "load_station_coords",
@@ -375,30 +374,41 @@ static PyMethodDef pyuvwsimMethods[] =
     {NULL, NULL, 0, NULL}
 };
 
-/* Initialisation function (called init[filename] where filename = name of *.so) */
-/* http://docs.scipy.org/doc/numpy/user/c-info.how-to-extend.html */
-PyMODINIT_FUNC PYUVWSIM_API initpyuvwsim()
+#if PY_MAJOR_VERSION >= 3
+static PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "_pyuvwsim",       /* m_name */
+        NULL,               /* m_doc */
+        -1,                 /* m_size */
+        methods             /* m_methods */
+};
+#endif
+
+
+static PyObject* moduleinit(void)
 {
-    /*
-     * TODO C module name should probably be _pyuvwsim with a python
-     * interface on top of this (with the usual __init__.py method etc.)
-     */
-    /*PyObject* m = Py_InitModule3("pyuvwsim", pyuvwsim_funcs, "docstring...");*/
-    PyObject* m = Py_InitModule("pyuvwsim", pyuvwsimMethods);
-    if (!m) return;
-
-    /* Create error objects and add them to the module. */
-    /* https://docs.python.org/2/extending/extending.html#intermezzo-errors-and-exceptions*/
-    #if 0
-    pyuvwsimError = PyErr_NewException("pyuvwsim.error", NULL, NULL);
-    Py_INCREF(pyuvwsimError);
-    /*printf("pyuvwsimError reference count = %zi\n", Py_REFCNT(pyuvwsimError));*/
-    PyModule_AddObject(m, "error", pyuvwsimError);
-    #endif
-
-    PyModule_AddStringConstant(m, "__version__", "@UVWSIM_VERSION@\0");
-    /*printf("  - ref count m: %zi\n", Py_REFCNT(m));*/
-
-    /* Import the use of numpy array objects. */
-    import_array();
+    PyObject* m;
+#if PY_MAJOR_VERSION >= 3
+    m = PyModule_Create(&moduledef);
+#else
+    m = Py_InitModule3("_pyuvwsim", methods, "docstring ...");
+#endif
+    return m;
 }
+
+#if PY_MAJOR_VERSION >= 3
+PyMODINIT_FUNC PyInit__pyuvwsim(void)
+{
+    import_array();
+    return moduleinit();
+}
+#else
+// XXX the init function name has to match that of the compiled module
+// with the pattern 'init<module name>'. This module is called '_oskar_mem'
+void init_pyuvwsim(void)
+{
+    import_array();
+    moduleinit();
+    return;
+}
+#endif
