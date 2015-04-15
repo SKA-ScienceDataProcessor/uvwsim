@@ -404,7 +404,7 @@ PyMODINIT_FUNC PyInit__pyuvwsim(void)
 }
 #else
 // XXX the init function name has to match that of the compiled module
-// with the pattern 'init<module name>'. This module is called '_oskar_mem'
+// with the pattern 'init<module name>'. This module is called '_pyuvwsim'
 void init_pyuvwsim(void)
 {
     import_array();
