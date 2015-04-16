@@ -45,7 +45,7 @@ ctest --verbose
 
 (Please note that the unit tests contain hard-coded relative paths to data files so must be run from the top level build directory.)
 
-All tests are expected to pass, if you find any failures please contact us at uvwsim@oerc.ox.ac.uk with a copy of the failed output, details of your operating system and any build variables you may have specified.
+All tests are expected to pass, if you find any failures please create [an issue ticket ](https://github.com/SKA-ScienceDataProcessor/uvwsim/issues) with a copy of the failed output, details of your operating system and any build variables you may have specified.
 
 
 ## Using the library ##
