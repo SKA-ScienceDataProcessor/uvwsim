@@ -409,13 +409,23 @@ TEST(uvwsim, evaluate_uvw_vla_a_hor)
         free(z);
     }
 
-    /* Plotting command with GNUPLOT:
-
-        gnuplot
-        set term x11
-        set datafile separator ","
-        plot 'test/TEMP_VLA_A_uvw_metres.csv' using 1:2
-
+    /* Plotting command with python, numpy & matplotlib:
+        import numpy as np
+        import matplotlib.pyplot as plt
+        uvw = np.loadtxt('TEMP_VLA_A_uvw_wavelengths.csv', delimiter=',')
+        num_baselines = 27*26/2 # 351
+        uvw_t0 = uvw[0:351*2,:]
+        fig = plt.figure(1, figsize=(10,10))
+        ax = fig.add_subplot(111, aspect='equal')
+        ax.plot(uvw_t0[:,0]/1.e3, uvw_t0[:,1]/1.e3,'+')
+        ax.set_xlabel('baseline uu [kilo-wavelengths]')
+        ax.set_ylabel('baseline vv [kilo-wavelengths]')
+        ax.axes.get_xaxis().set_ticks(np.linspace(-40,40, 9))
+        ax.axes.get_yaxis().set_ticks(np.linspace(-60,60, 13))
+        print np.arange(-40,40, 10)
+        ax.grid()
+        plt.savefig('temp_vla_a_uvw_wavelengths.png', transparent=True, frameon=False)
+        plt.show()
      */
 }
 
@@ -508,5 +518,7 @@ TEST(uvwsim, evaluate_uvw_vla_a_itrf)
 TEST(uvwsim, datetime_to_mjd)
 {
     ASSERT_DOUBLE_EQ(56856.0, uvwsim_datetime_to_mjd(2014, 7, 18, 0, 0, 0.0));
-    ASSERT_DOUBLE_EQ(56856.713021990843, uvwsim_datetime_to_mjd(2014, 7, 18, 17, 06, 45.1));
+    double day_fraction = (17.+6./(60.)+45.1/(3600.))/24.;
+    ASSERT_NEAR(56856.0+day_fraction,
+        uvwsim_datetime_to_mjd(2014, 7, 18, 17, 06, 45.1), 1.0e-11);
 }

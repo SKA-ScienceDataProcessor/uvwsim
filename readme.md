@@ -1,5 +1,5 @@
-# The uvwsim library (version 1.0)#
-
+# The uvwsim library (version 1.1)#
+*last update: 16 April 2015*
 
 ## Introduction ##
 The **uvwsim** library provides a simple C API for generating interferometric baseline (uvw) coordinates. This library has been developed for use with various SKA.SDP tasks.
@@ -299,4 +299,24 @@ int main()
 
 If run sucessfully, this example produces a ASCII CSV file consisting of baseline coordinates in wavelengths called *example_baselines_vla_a.txt*. This can be plotted in your favorite plotting program. The following plot is a scatter plot of these results for the baseline coordinates *uu*, in wavelengths against *vv*, in wavelengths for the first time and channel.
 
+
 ![Figure showing scatter plot of example baselines. see: doc/example.png in the library source tree](http://www.oerc.ox.ac.uk/~ska/uvwsim/example.png "Scatter plot of baselines from the example code.")
+
+```Python
+import numpy as np
+import matplotlib.pyplot as plt
+uvw = np.loadtxt('example_baselines_vla_a.txt', delimiter=',')
+num_baselines = 27*26/2 # 351
+uvw_t0 = uvw[0:num_baselines*2,:]
+fig = plt.figure(1, figsize=(10,10))
+ax = fig.add_subplot(111, aspect='equal')
+ax.plot(uvw_t0[:,0]/1.e3, uvw_t0[:,1]/1.e3,'o', ms=3, lw=0)
+ax.set_xlabel('baseline uu [kilo-wavelengths]')
+ax.set_ylabel('baseline vv [kilo-wavelengths]')
+ax.axes.get_xaxis().set_ticks(np.linspace(-50,50, 11))
+ax.axes.get_yaxis().set_ticks(np.linspace(-60,60, 13))
+print np.arange(-40,40, 10)
+ax.grid()
+plt.savefig('example_baselines_vla_a.png', transparent=True, frameon=False)
+plt.show()
+```

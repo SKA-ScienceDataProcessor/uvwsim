@@ -1,3 +1,14 @@
+2015-04-16  uvwsim 1.1
+
+    * Fixed a bug in baseline co-ordiante generation, due to an invalid sign on
+      in calculating the station v coordiate..
+    * Added python module build/install script to the python interface.
+      This can be installed using 'python setup.py install'.
+    * Added an example ipython notebook to demonstrate use of the python
+      interface.
+
+
+
 2014-09-25  uvwsim 1.0
 
     * First release

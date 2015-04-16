@@ -186,9 +186,9 @@ void uvwsim_evaluate_baseline_uvw(double* uu, double* vv,
     for (i = 0; i < nant; ++i)
     {
         double t = x_ecef[i] * cosha0 - y_ecef[i]*sinha0;
-        u[i] = x_ecef[i]*sinha0 + y_ecef[i]*cosha0;
-        v[i] = t*sindec0   + z_ecef[i]*cosdec0;
-        w[i] = t*cosdec0   + z_ecef[i]*sindec0;
+        u[i] = x_ecef[i] * sinha0 + y_ecef[i] * cosha0;
+        v[i] = z_ecef[i] * cosdec0 - t * sindec0;
+        w[i] = t * cosdec0 + z_ecef[i] * sindec0;
     }
 
     /* Convert from station uvw, to baseline uvw */
@@ -214,14 +214,19 @@ double uvwsim_datetime_to_mjd(int year, int month, int day, int hour,
     double day_fraction;
     int a, y, m, jdn;
 
-    /* Compute Julian day Day Number (Note: all integer division) */
+    /* Compute Julian Day Number (Note: all integer division). */
     a = (14 - month) / 12;
     y = year + 4800 - a;
     m = month + 12 * a - 3;
-    jdn = day + (153*m+2)/5 + (365*y) + (y/4) - (y/100) + (y/400) - 32045;
+    jdn = day + (153 * m + 2) / 5 + (365 * y) + (y / 4) - (y / 100)
+            + (y / 400) - 32045;
 
+    /* Compute day fraction. */
     day_fraction = (hour + minute/60. + seconds/3600.) / 24.;
-    return ((double)jdn + (day_fraction - 0.5) - 2400000.5);
+
+    /* Compute day fraction. */
+    day_fraction -= 0.5;
+    return (jdn - 2400000.5) + day_fraction;
 }
 
 /* http://goo.gl/LWf7Gz */
