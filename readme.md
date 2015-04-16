@@ -302,6 +302,8 @@ If run sucessfully, this example produces a ASCII CSV file consisting of baselin
 
 ![Figure showing scatter plot of example baselines. see: doc/example.png in the library source tree](http://www.oerc.ox.ac.uk/~ska/uvwsim/example.png "Scatter plot of baselines from the example code.")
 
+
+Plotted with the following python script:
 ```Python
 import numpy as np
 import matplotlib.pyplot as plt
