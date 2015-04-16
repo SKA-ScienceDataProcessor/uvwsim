@@ -300,7 +300,7 @@ int main()
 If run sucessfully, this example produces a ASCII CSV file consisting of baseline coordinates in wavelengths called *example_baselines_vla_a.txt*. This can be plotted in your favorite plotting program. The following plot is a scatter plot of these results for the baseline coordinates *uu*, in wavelengths against *vv*, in wavelengths for the first time and channel.
 
 
-![Figure showing scatter plot of example baselines. see: doc/example.png in the library source tree](http://www.oerc.ox.ac.uk/~ska/uvwsim/example.png "Scatter plot of baselines from the example code.")
+![Figure showing scatter plot of example baselines. see: doc/example.png in the library source tree](https://raw.githubusercontent.com/SKA-ScienceDataProcessor/uvwsim/master/doc/example.png "Scatter plot of baselines from the example code.")
 
 
 Plotted with the following python script:
