@@ -106,7 +106,7 @@ static PyObject* load_station_coords(PyObject* self, PyObject* args)
     }
 
     /*printf("  - ref count: x_:%zi, y_:%zi, z_:%zi\n", PyArray_REFCOUNT(x_),
-            PyArray_REFCOUNT(x_),PyArray_REFCOUNT(x_));*/
+            PyArray_REFCOUNT(y_),PyArray_REFCOUNT(z_));*/
 
     /* 'O' increases reference count by 1, 'N' doesn't */
     /* https://docs.python.org/2.0/ext/buildValue.html */
