@@ -93,6 +93,9 @@ int UVWSIM_API uvwsim_num_baselines(int n);
 void UVWSIM_API uvwsim_evaluate_baseline_uvw(double* uu, double* vv,
         double* ww, int nant, const double* x_ecef, const double* y_ecef,
         const double* z_ecef, double ra0, double dec0, double time_mjd);
+void UVWSIM_API uvwsim_evaluate_station_uvw(double* u, double* v,
+        double* w, int nant, const double* x_ecef, const double* y_ecef,
+        const double* z_ecef, double ra0, double dec0, double time_mjd);
 double UVWSIM_API uvwsim_datetime_to_mjd(int year, int month, int day, int hour,
         int minute, double seconds);
 

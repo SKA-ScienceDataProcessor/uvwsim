@@ -163,6 +163,27 @@ int uvwsim_num_baselines(int nant)
     return (nant*(nant-1))/2;
 }
 
+
+void uvwsim_evaluate_station_uvw(double* u, double* v, double* w,
+        int num_antennas, const double* x_ecef, const double* y_ecef,
+        const double* z_ecef, double ra0, double dec0, double time_mjd)
+{
+    double gast = uvwsim_convert_mjd_to_gast_fast(time_mjd);
+    double ha0  = gast - ra0;
+    double sinha0  = sin(ha0);
+    double cosha0  = cos(ha0);
+    double sindec0 = sin(dec0);
+    double cosdec0 = cos(dec0);
+    for (int i = 0; i < num_antennas; ++i)
+    {
+        double t = x_ecef[i] * cosha0 - y_ecef[i]*sinha0;
+        u[i] = x_ecef[i] * sinha0 + y_ecef[i] * cosha0;
+        v[i] = z_ecef[i] * cosdec0 - t * sindec0;
+        w[i] = t * cosdec0 + z_ecef[i] * sindec0;
+    }
+}
+
+
 void uvwsim_evaluate_baseline_uvw(double* uu, double* vv,
         double* ww, int nant, const double* x_ecef, const double* y_ecef,
         const double* z_ecef, double ra0, double dec0, double time_mjd)
@@ -182,7 +203,7 @@ void uvwsim_evaluate_baseline_uvw(double* uu, double* vv,
     double sindec0 = sin(dec0);
     double cosdec0 = cos(dec0);
 
-    /* Evaluate baseline uvw */
+    /* Evaluate station uvw */
     for (i = 0; i < nant; ++i)
     {
         double t = x_ecef[i] * cosha0 - y_ecef[i]*sinha0;

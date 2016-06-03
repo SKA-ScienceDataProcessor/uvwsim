@@ -306,6 +306,65 @@ fail:
     return NULL;
 }
 
+
+static PyObject* evaluate_station_uvw(PyObject* self, PyObject* args)
+{
+    /* Read input arguments */
+    PyObject *x_ecef_o=NULL, *y_ecef_o=NULL, *z_ecef_o=NULL;
+    double ra0, dec0, mjd;
+    PyObject *x_ecef_=NULL, *y_ecef_=NULL, *z_ecef_=NULL;
+    if (!PyArg_ParseTuple(args, "O!O!O!ddd", &PyArray_Type, &x_ecef_o,
+        &PyArray_Type, &y_ecef_o, &PyArray_Type, &z_ecef_o,
+        &ra0, &dec0, &mjd)) return NULL;
+
+    /*  Convert Python objects to array of specified built-in data-type.*/
+    int typenum = NPY_DOUBLE;
+    int requirements = NPY_ARRAY_IN_ARRAY;
+    x_ecef_ = PyArray_FROM_OTF(x_ecef_o, typenum, requirements);
+    if (!x_ecef_) goto fail;
+    y_ecef_ = PyArray_FROM_OTF(y_ecef_o, typenum, requirements);
+    if (!y_ecef_) goto fail;
+    z_ecef_ = PyArray_FROM_OTF(z_ecef_o, typenum, requirements);
+    if (!z_ecef_) goto fail;
+
+    /* Extract dimensions and pointers. */
+    /* TODO Require input arrays be 1D, and check dimension consistency.
+     * int nd = PyArray_NDIM(x_ecef_); */
+    npy_intp* dims = PyArray_DIMS((PyArrayObject*)x_ecef_);
+    double* x_ecef = (double*)PyArray_DATA((PyArrayObject*)x_ecef_);
+    double* y_ecef = (double*)PyArray_DATA((PyArrayObject*)y_ecef_);
+    double* z_ecef = (double*)PyArray_DATA((PyArrayObject*)z_ecef_);
+
+    /* Create New arrays for baseline coordinates. */
+    npy_intp n = dims[0];
+    PyObject* u_ = PyArray_SimpleNew(1, &n, NPY_DOUBLE);
+    PyObject* v_ = PyArray_SimpleNew(1, &n, NPY_DOUBLE);
+    PyObject* w_ = PyArray_SimpleNew(1, &n, NPY_DOUBLE);
+    double* u  = (double*)PyArray_DATA((PyArrayObject*)u_);
+    double* v  = (double*)PyArray_DATA((PyArrayObject*)v_);
+    double* w  = (double*)PyArray_DATA((PyArrayObject*)w_);
+
+    /* Call function to evaluate baseline uvw */
+    uvwsim_evaluate_station_uvw(u, v, w, n, x_ecef, y_ecef, z_ecef, ra0, dec0,
+        mjd);
+
+    /* Decrement references to local array objects. */
+    Py_DECREF(x_ecef_);
+    Py_DECREF(y_ecef_);
+    Py_DECREF(z_ecef_);
+
+    /* Return baseline coordinates. */
+    return Py_BuildValue("NNN", u_, v_, w_);
+
+fail:
+    Py_XDECREF(x_ecef_);
+    Py_XDECREF(y_ecef_);
+    Py_XDECREF(z_ecef_);
+    return NULL;
+}
+
+
+
 static PyObject* datetime_to_mjd(PyObject* self, PyObject* args)
 {
     /* Read input arguments */
@@ -356,6 +415,12 @@ static PyMethodDef methods[] =
         (PyCFunction)evaluate_baseline_uvw, METH_VARARGS,
         "(uu, vv, ww) = evaluate_baseline_uvw(x_ecef, y_ecef, z_ecef, ra0, dec0, mjd)\n"
         "Generate baselines coordinates.\n"
+    },
+    {
+        "evaluate_station_uvw",
+        (PyCFunction)evaluate_station_uvw, METH_VARARGS,
+        "(u, v, w) = evaluate_baseline_uvw(x_ecef, y_ecef, z_ecef, ra0, dec0, mjd)\n"
+        "Converts ECEF to station uvw coordinates.\n"
     },
     {
         "datetime_to_mjd",

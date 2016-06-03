@@ -4,9 +4,10 @@ pyuvwsim
 Experimental python interface to uvwsim.
 """
 
-from .version import __version__
-from numpy import asarray
 import _pyuvwsim
+from numpy import asarray
+
+from .version import __version__
 
 
 def load_station_coords(file_name):
@@ -40,14 +41,14 @@ def convert_enu_to_ecef(x, y, z, lon, lat, alt=0.0):
         (x, y, z) tuple of coordinate arrays, in metres.
     """
     x = asarray(x)
-    y = asarray(x)
-    z = asarray(x)
+    y = asarray(y)
+    z = asarray(z)
     return _pyuvwsim.convert_enu_to_ecef(x, y, z, lon, lat, alt)
 
 
 def evaluate_baseline_uvw(x, y, z, ra, dec, mjd):
     """
-    Generate baseline coordinates based on station coordinates, pointing
+    Generate baseline coordinates from station ECEF coordinates, pointing
     direction and time.
 
     Args:
@@ -63,8 +64,31 @@ def evaluate_baseline_uvw(x, y, z, ra, dec, mjd):
 
     """
     x = asarray(x)
-    y = asarray(x)
-    z = asarray(x)
+    y = asarray(y)
+    z = asarray(z)
+    return _pyuvwsim.evaluate_baseline_uvw(x, y, z, ra, dec, mjd)
+
+
+def evaluate_station_uvw(x, y, z, ra, dec, mjd):
+    """
+    Generate station uvw coordinates from station ECEF coordinates, pointing
+    direction and time.
+
+    Args:
+        x (array-like): Array of x (ECEF) coordinates, in metres.
+        y (array-like): Array of y (ECEF) coordinates, in metres.
+        z (array-like): Array of z (ECEF) coordinates, in metres.
+        ra (double): Right Ascension of pointing direction, in radians.
+        dec (double): Declination of pointing direction, in radians.
+        mjd (double): Modified Julian date (UTC).
+
+    Returns:
+        (u, v, w) tuple of station uvw coordinate arrays, in metres.
+
+    """
+    x = asarray(x)
+    y = asarray(y)
+    z = asarray(z)
     return _pyuvwsim.evaluate_baseline_uvw(x, y, z, ra, dec, mjd)
 
 
