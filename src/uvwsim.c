@@ -229,6 +229,49 @@ void uvwsim_evaluate_baseline_uvw(double* uu, double* vv,
     free(w);
 }
 
+
+void uvwsim_evaluate_baseline_uvw_ha_dec(double* uu, double* vv,
+        double* ww, int num_ant, const double* x, const double* y,
+        const double* z, double ha, double dec)
+{
+    /* Allocate memory for station uvw */
+    double* u = (double*)malloc(num_ant * sizeof(double));
+    double* v = (double*)malloc(num_ant * sizeof(double));
+    double* w = (double*)malloc(num_ant * sizeof(double));
+
+    /* Convert to station uvw */
+    double sinha  = sin(ha);
+    double cosha  = cos(ha);
+    double sindec = sin(dec);
+    double cosdec = cos(dec);
+
+    /* Evaluate station uvw */
+    for (int i = 0; i < num_ant; ++i)
+    {
+        double t = x[i] * cosha - y[i] * sinha;
+        u[i] = x[i] * sinha + y[i] * cosha;
+        v[i] = z[i] * cosdec - t * sindec;
+        w[i] = t * cosdec + z[i] * sindec;
+    }
+
+    /* Convert from station uvw, to baseline uvw */
+    for (int s1 = 0, b = 0; s1 < num_ant; ++s1)
+    {
+        for (int s2 = s1 + 1; s2 < num_ant; ++s2, ++b)
+        {
+            uu[b] = u[s2] - u[s1];
+            vv[b] = v[s2] - v[s1];
+            ww[b] = w[s2] - w[s1];
+        }
+    }
+
+    /* cleanup */
+    free(u);
+    free(v);
+    free(w);
+}
+
+
 double uvwsim_datetime_to_mjd(int year, int month, int day, int hour,
         int minute, double seconds)
 {

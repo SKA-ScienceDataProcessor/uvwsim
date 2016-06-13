@@ -69,6 +69,28 @@ def evaluate_baseline_uvw(x, y, z, ra, dec, mjd):
     return _pyuvwsim.evaluate_baseline_uvw(x, y, z, ra, dec, mjd)
 
 
+def evaluate_baseline_uvw_ha_dec(x, y, z, ha, dec):
+    """
+    Generate baseline coordinates from station ECEF coordinates, Hour angle,
+    and declination
+
+    Args:
+        x (array-like): Array of x (ECEF) coordinates, in metres.
+        y (array-like): Array of y (ECEF) coordinates, in metres.
+        z (array-like): Array of z (ECEF) coordinates, in metres.
+        ha (double): Hour angle, in radians (24h == 2pi).
+        dec (double): Declination of pointing direction, in radians.
+
+    Returns:
+        (uu, vv, ww) tuple of baseline coordinate arrays, in metres.
+
+    """
+    x = asarray(x)
+    y = asarray(y)
+    z = asarray(z)
+    return _pyuvwsim.evaluate_baseline_uvw_ha_dec(x, y, z, ha, dec)
+
+
 def evaluate_station_uvw(x, y, z, ra, dec, mjd):
     """
     Generate station uvw coordinates from station ECEF coordinates, pointing
@@ -89,7 +111,8 @@ def evaluate_station_uvw(x, y, z, ra, dec, mjd):
     x = asarray(x)
     y = asarray(y)
     z = asarray(z)
-    return _pyuvwsim.evaluate_baseline_uvw(x, y, z, ra, dec, mjd)
+    return _pyuvwsim.evaluate_station_uvw(x, y, z, ra, dec, mjd)
+
 
 
 def datetime_to_mjd(year, month, day, hour, minute, seconds):
