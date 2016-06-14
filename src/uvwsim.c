@@ -35,7 +35,6 @@
 #include <string.h>
 #include <math.h>
 #include <sys/stat.h>
-#include <stdio.h>
 
 #ifndef M_PI
 #defined M_PI 3.14159265358979323846264338327950288
@@ -257,8 +256,6 @@ void uvwsim_evaluate_baseline_uvw_ha_dec(double* uu, double* vv,
     double cos_ha  = cos(ha);
     double sin_dec = sin(dec);
     double cos_dec = cos(dec);
-
-    printf("%f %f\n", ha, dec);
 
     /* Evaluate station uvw */
     for (int i = 0; i < n; ++i)
