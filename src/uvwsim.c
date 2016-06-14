@@ -35,6 +35,7 @@
 #include <string.h>
 #include <math.h>
 #include <sys/stat.h>
+#include <stdio.h>
 
 #ifndef M_PI
 #defined M_PI 3.14159265358979323846264338327950288
@@ -118,8 +119,6 @@ void uvwsim_convert_enu_to_ecef(int nant, double* x_ecef, double* y_ecef,
         double* z_ecef, const double* x_enu, const double* y_enu,
         const double* z_enu, double lon, double lat, double alt)
 {
-    int i;
-
     /* pre-compute some trig. */
     double sinlon = sin(lon);
     double coslon = cos(lon);
@@ -131,13 +130,13 @@ void uvwsim_convert_enu_to_ecef(int nant, double* x_ecef, double* y_ecef,
     double x_r, y_r, z_r;
     const double a = 6378137.000; /* Equatorial radius (semi-major axis). */
     const double b = 6356752.314; /* Polar radius (semi-minor axis). */
-    const double e2 = 1.0 - (b*b) / (a*a);
-    double n_phi = a / sqrt(1.0 - e2*pow(sinlat,2.0));
-    x_r = (n_phi+alt)*coslat*coslon;
-    y_r = (n_phi+alt)*coslat*sinlon;
-    z_r = ((1.0-e2)*n_phi+alt)*sinlat;
+    const double e2 = 1.0 - (b * b) / (a * a);
+    double n_phi = a / sqrt(1.0 - e2 * pow(sinlat, 2.0));
+    x_r = (n_phi + alt) * coslat * coslon;
+    y_r = (n_phi + alt) * coslat * sinlon;
+    z_r = ((1.0 - e2) * n_phi + alt) * sinlat;
 
-    for (i = 0; i < nant; ++i)
+    for (int i = 0; i < nant; ++i)
     {
         /* Copy input coordinates into temporary variables */
         double x = x_enu[i];
@@ -145,10 +144,9 @@ void uvwsim_convert_enu_to_ecef(int nant, double* x_ecef, double* y_ecef,
         double z = z_enu[i];
 
         /* Rotate from horizon (ENU) to offset ECEF frame */
-        double xt, yt, zt;
-        xt = -x * sinlon - y * sinlat * coslon + z * coslat * coslon;
-        yt =  x * coslon - y * sinlat * sinlon + z * coslat * sinlon;
-        zt =  y * coslat + z * sinlat;
+        double xt = -x * sinlon - y * sinlat * coslon + z * coslat * coslon;
+        double yt =  x * coslon - y * sinlat * sinlon + z * coslat * sinlon;
+        double zt =  y * coslat + z * sinlat;
 
         /* Translate from offset ECEF to ECEF by adding the coordinate of the
          * reference point */
@@ -230,34 +228,49 @@ void uvwsim_evaluate_baseline_uvw(double* uu, double* vv,
 }
 
 
+static void ecef_to_uvw_(double x, double y, double z, double sin_ha,
+        double cos_ha, double sin_dec, double cos_dec, double* u, double* v,
+        double* w)
+{
+    /* This is standard rotation */
+    double t = x * cos_ha - y * sin_ha;
+    double v_ = z * cos_dec - sin_dec * t;
+    double w_ = cos_dec * t + z * sin_dec;
+    t = x * sin_ha + y * cos_ha;
+    *u = t;
+    *v = v_;
+    *w = w_;
+}
+
+
 void uvwsim_evaluate_baseline_uvw_ha_dec(double* uu, double* vv,
-        double* ww, int num_ant, const double* x, const double* y,
+        double* ww, int n, const double* x, const double* y,
         const double* z, double ha, double dec)
 {
     /* Allocate memory for station uvw */
-    double* u = (double*)malloc(num_ant * sizeof(double));
-    double* v = (double*)malloc(num_ant * sizeof(double));
-    double* w = (double*)malloc(num_ant * sizeof(double));
+    double* u = (double*)malloc(n * sizeof(double));
+    double* v = (double*)malloc(n * sizeof(double));
+    double* w = (double*)malloc(n * sizeof(double));
 
     /* Convert to station uvw */
-    double sinha  = sin(ha);
-    double cosha  = cos(ha);
-    double sindec = sin(dec);
-    double cosdec = cos(dec);
+    double sin_ha  = sin(ha);
+    double cos_ha  = cos(ha);
+    double sin_dec = sin(dec);
+    double cos_dec = cos(dec);
+
+    printf("%f %f\n", ha, dec);
 
     /* Evaluate station uvw */
-    for (int i = 0; i < num_ant; ++i)
+    for (int i = 0; i < n; ++i)
     {
-        double t = x[i] * cosha - y[i] * sinha;
-        u[i] = x[i] * sinha + y[i] * cosha;
-        v[i] = z[i] * cosdec - t * sindec;
-        w[i] = t * cosdec + z[i] * sindec;
+        ecef_to_uvw_(x[i], y[i], z[i], sin_ha, cos_ha, sin_dec, cos_dec,
+                &u[i], &v[i], &w[i]);
     }
 
     /* Convert from station uvw, to baseline uvw */
-    for (int s1 = 0, b = 0; s1 < num_ant; ++s1)
+    for (int s1 = 0, b = 0; s1 < n; ++s1)
     {
-        for (int s2 = s1 + 1; s2 < num_ant; ++s2, ++b)
+        for (int s2 = s1 + 1; s2 < n; ++s2, ++b)
         {
             uu[b] = u[s2] - u[s1];
             vv[b] = v[s2] - v[s1];
@@ -269,6 +282,21 @@ void uvwsim_evaluate_baseline_uvw_ha_dec(double* uu, double* vv,
     free(u);
     free(v);
     free(w);
+}
+
+void uvwsim_evaluate_station_uvw_ha_dec(double* u, double* v, double* w,
+        int n, const double* x, const double* y, const double* z,
+        double ha, double dec)
+{
+    double sin_ha  = sin(ha);
+    double cos_ha  = cos(ha);
+    double sin_dec = sin(dec);
+    double cos_dec = cos(dec);
+    for (int i = 0; i < n; ++i)
+    {
+        ecef_to_uvw_(x[i], y[i], z[i], sin_ha, cos_ha, sin_dec, cos_dec,
+                &u[i], &v[i], &w[i]);
+    }
 }
 
 

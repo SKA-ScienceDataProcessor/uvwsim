@@ -81,25 +81,76 @@ extern "C" {
 #endif
 
 /* Public API */
-int UVWSIM_API uvwsim_file_exists(const char* filename);
-int UVWSIM_API uvwsim_get_num_stations(const char* filename);
-int UVWSIM_API uvwsim_load_station_coords(const char* filename, int n,
+UVWSIM_API int uvwsim_file_exists(const char* filename);
+UVWSIM_API int uvwsim_get_num_stations(const char* filename);
+UVWSIM_API int uvwsim_load_station_coords(const char* filename, int n,
         double* x, double*y, double* z);
-void UVWSIM_API uvwsim_convert_enu_to_ecef(int n, double* x_ecef,
+UVWSIM_API void uvwsim_convert_enu_to_ecef(int n, double* x_ecef,
         double* y_ecef, double* z_ecef, const double* x_enu,
         const double* y_enu, const double* z_enu, double lon, double lat,
         double alt);
-int UVWSIM_API uvwsim_num_baselines(int n);
-void UVWSIM_API uvwsim_evaluate_baseline_uvw(double* uu, double* vv,
+UVWSIM_API int uvwsim_num_baselines(int n);
+UVWSIM_API void uvwsim_evaluate_baseline_uvw(double* uu, double* vv,
         double* ww, int nant, const double* x_ecef, const double* y_ecef,
         const double* z_ecef, double ra0, double dec0, double time_mjd);
-void UVWSIM_API uvwsim_evaluate_baseline_uvw_ha_dec(double* uu, double* vv,
-        double* ww, int nant, const double* x_ecef, const double* y_ecef,
+
+
+/**
+ * @brief Obtain baseline coordinates from ECEF antenna coordinates.
+ *
+ * @note
+ * Greenwich hour angle = local hour angle - east longitude
+ * e.g. the VLA has east longitude of -107.6177275 degrees and therefore
+ * the phase centre will be overhead (local hour angle of 0.0) for
+ * an Greenwich hour angle of +107.6177275 degrees.
+ *
+ * @param uu        Baseline u coordinates, in metres
+ * @param vv        Baseline v coordinates, in metres
+ * @param ww        Baseline w coordinates, in metres
+ * @param n         Number of stations
+ * @param x_ecef    Station ECEF x coordinate, in metres
+ * @param y_ecef    Station ECEF x coordinate, in metres
+ * @param z_ecef    Station ECEF x coordinate, in metres
+ * @param ha        Greenwich hour angle, in radians
+ * @param dec       Declination of the phase centre, in radians
+ */
+UVWSIM_API
+void uvwsim_evaluate_baseline_uvw_ha_dec(double* uu, double* vv,
+        double* ww, int n, const double* x_ecef, const double* y_ecef,
         const double* z_ecef, double ha, double dec);
-void UVWSIM_API uvwsim_evaluate_station_uvw(double* u, double* v,
+
+UVWSIM_API
+void uvwsim_evaluate_station_uvw(double* u, double* v,
         double* w, int nant, const double* x_ecef, const double* y_ecef,
         const double* z_ecef, double ra0, double dec0, double time_mjd);
-double UVWSIM_API uvwsim_datetime_to_mjd(int year, int month, int day, int hour,
+
+
+/**
+ * @brief Convert antenna / station ECEF to station uvw coordinates.
+ *
+ * @note
+ * Greenwich hour angle = local hour angle - east longitude
+ * e.g. the VLA has east longitude of -107.6177275 degrees and therefore
+ * the phase centre will be overhead (local hour angle of 0.0) for
+ * an Greenwich hour angle of +107.6177275 degrees.
+ *
+ * @param u         Station u coordinates, in metres
+ * @param v         Station v coordinates, in metres
+ * @param w         Station w coordinates, in metres
+ * @param n         Number of stations
+ * @param x_ecef    Station ECEF x coordinate, in metres
+ * @param y_ecef    Station ECEF x coordinate, in metres
+ * @param z_ecef    Station ECEF x coordinate, in metres
+ * @param ha        Greenwich hour angle, in radians
+ * @param dec       Declination of the phase centre, in radians
+ */UVWSIM_API
+void uvwsim_evaluate_station_uvw_ha_dec(double* u, double* v,
+        double* w, int n, const double* x_ecef, const double* y_ecef,
+        const double* z_ecef, double ha, double dec);
+
+
+UVWSIM_API
+double uvwsim_datetime_to_mjd(int year, int month, int day, int hour,
         int minute, double seconds);
 
 /* Private functions. */

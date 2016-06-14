@@ -337,7 +337,7 @@ static PyObject* evaluate_baseline_uvw_ha_dec(PyObject* self, PyObject* args)
 
     /* Create New arrays for baseline coordinates. */
     int n   = dims[0];
-    npy_intp nb  = (n * (n-1)) / 2;
+    npy_intp nb  = (n * (n - 1)) / 2;
     PyObject* uu_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
     PyObject* vv_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
     PyObject* ww_ = PyArray_SimpleNew(1, &nb, NPY_DOUBLE);
@@ -370,7 +370,6 @@ static PyObject* evaluate_station_uvw(PyObject* self, PyObject* args)
     /* Read input arguments */
     PyObject *x_ecef_o=NULL, *y_ecef_o=NULL, *z_ecef_o=NULL;
     double ra0, dec0, mjd;
-    PyObject *x_ecef_=NULL, *y_ecef_=NULL, *z_ecef_=NULL;
     if (!PyArg_ParseTuple(args, "O!O!O!ddd", &PyArray_Type, &x_ecef_o,
         &PyArray_Type, &y_ecef_o, &PyArray_Type, &z_ecef_o,
         &ra0, &dec0, &mjd)) return NULL;
@@ -378,6 +377,7 @@ static PyObject* evaluate_station_uvw(PyObject* self, PyObject* args)
     /*  Convert Python objects to array of specified built-in data-type.*/
     int typenum = NPY_DOUBLE;
     int requirements = NPY_ARRAY_IN_ARRAY;
+    PyObject *x_ecef_=NULL, *y_ecef_=NULL, *z_ecef_=NULL;
     x_ecef_ = PyArray_FROM_OTF(x_ecef_o, typenum, requirements);
     if (!x_ecef_) goto fail;
     y_ecef_ = PyArray_FROM_OTF(y_ecef_o, typenum, requirements);
@@ -393,7 +393,7 @@ static PyObject* evaluate_station_uvw(PyObject* self, PyObject* args)
     double* y_ecef = (double*)PyArray_DATA((PyArrayObject*)y_ecef_);
     double* z_ecef = (double*)PyArray_DATA((PyArrayObject*)z_ecef_);
 
-    /* Create New arrays for baseline coordinates. */
+    /* Create New arrays for station coordinates. */
     npy_intp n = dims[0];
     PyObject* u_ = PyArray_SimpleNew(1, &n, NPY_DOUBLE);
     PyObject* v_ = PyArray_SimpleNew(1, &n, NPY_DOUBLE);
@@ -402,7 +402,7 @@ static PyObject* evaluate_station_uvw(PyObject* self, PyObject* args)
     double* v  = (double*)PyArray_DATA((PyArrayObject*)v_);
     double* w  = (double*)PyArray_DATA((PyArrayObject*)w_);
 
-    /* Call function to evaluate baseline uvw */
+    /* Call function to evaluate station uvw */
     uvwsim_evaluate_station_uvw(u, v, w, n, x_ecef, y_ecef, z_ecef, ra0, dec0,
         mjd);
 
@@ -411,7 +411,7 @@ static PyObject* evaluate_station_uvw(PyObject* self, PyObject* args)
     Py_DECREF(y_ecef_);
     Py_DECREF(z_ecef_);
 
-    /* Return baseline coordinates. */
+    /* Return station uvw coordinates. */
     return Py_BuildValue("NNN", u_, v_, w_);
 
 fail:
@@ -421,6 +421,62 @@ fail:
     return NULL;
 }
 
+
+static PyObject* evaluate_station_uvw_ha_dec(PyObject* self, PyObject* args)
+{
+    /* Read input arguments */
+    PyObject *x_ecef_o=NULL, *y_ecef_o=NULL, *z_ecef_o=NULL;
+    double ha, dec;
+        if (!PyArg_ParseTuple(args, "O!O!O!dd", &PyArray_Type, &x_ecef_o,
+        &PyArray_Type, &y_ecef_o, &PyArray_Type, &z_ecef_o,
+        &ha, &dec)) return NULL;
+
+    /*  Convert Python objects to array of specified built-in data-type.*/
+    int typenum = NPY_DOUBLE;
+    int requirements = NPY_ARRAY_IN_ARRAY;
+    PyObject *x_ecef_=NULL, *y_ecef_=NULL, *z_ecef_=NULL;
+    x_ecef_ = PyArray_FROM_OTF(x_ecef_o, typenum, requirements);
+    if (!x_ecef_) goto fail;
+    y_ecef_ = PyArray_FROM_OTF(y_ecef_o, typenum, requirements);
+    if (!y_ecef_) goto fail;
+    z_ecef_ = PyArray_FROM_OTF(z_ecef_o, typenum, requirements);
+    if (!z_ecef_) goto fail;
+
+    /* Extract dimensions and pointers. */
+    /* TODO Require input arrays be 1D, and check dimension consistency.
+     * int nd = PyArray_NDIM(x_ecef_); */
+    npy_intp* dims = PyArray_DIMS((PyArrayObject*)x_ecef_);
+    double* x_ecef = (double*)PyArray_DATA((PyArrayObject*)x_ecef_);
+    double* y_ecef = (double*)PyArray_DATA((PyArrayObject*)y_ecef_);
+    double* z_ecef = (double*)PyArray_DATA((PyArrayObject*)z_ecef_);
+
+    /* Create New arrays for station coordinates. */
+    npy_intp n = dims[0];
+    PyObject* u_ = PyArray_SimpleNew(1, &n, NPY_DOUBLE);
+    PyObject* v_ = PyArray_SimpleNew(1, &n, NPY_DOUBLE);
+    PyObject* w_ = PyArray_SimpleNew(1, &n, NPY_DOUBLE);
+    double* u  = (double*)PyArray_DATA((PyArrayObject*)u_);
+    double* v  = (double*)PyArray_DATA((PyArrayObject*)v_);
+    double* w  = (double*)PyArray_DATA((PyArrayObject*)w_);
+
+    /* Call function to evaluate station uvw */
+    uvwsim_evaluate_station_uvw_ha_dec(u, v, w, n, x_ecef, y_ecef, z_ecef,
+            ha, dec);
+
+    /* Decrement references to local array objects. */
+    Py_DECREF(x_ecef_);
+    Py_DECREF(y_ecef_);
+    Py_DECREF(z_ecef_);
+
+    /* Return station uvw coordinates. */
+    return Py_BuildValue("NNN", u_, v_, w_);
+
+fail:
+    Py_XDECREF(x_ecef_);
+    Py_XDECREF(y_ecef_);
+    Py_XDECREF(z_ecef_);
+    return NULL;
+}
 
 
 static PyObject* datetime_to_mjd(PyObject* self, PyObject* args)
@@ -483,7 +539,13 @@ static PyMethodDef methods[] =
     {
         "evaluate_station_uvw",
         (PyCFunction)evaluate_station_uvw, METH_VARARGS,
-        "(u, v, w) = evaluate_baseline_uvw(x_ecef, y_ecef, z_ecef, ra0, dec0, mjd)\n"
+        "(u, v, w) = evaluate_station_uvw(x_ecef, y_ecef, z_ecef, ra0, dec0, mjd)\n"
+        "Converts ECEF to station uvw coordinates.\n"
+    },
+    {
+        "evaluate_station_uvw_ha_dec",
+        (PyCFunction)evaluate_station_uvw_ha_dec, METH_VARARGS,
+        "(u, v, w) = evaluate_station_uvw_ha_dec(x_ecef, y_ecef, z_ecef, ha, dec)\n"
         "Converts ECEF to station uvw coordinates.\n"
     },
     {

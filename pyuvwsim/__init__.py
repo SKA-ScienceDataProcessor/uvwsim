@@ -74,11 +74,17 @@ def evaluate_baseline_uvw_ha_dec(x, y, z, ha, dec):
     Generate baseline coordinates from station ECEF coordinates, Hour angle,
     and declination
 
+    Note:
+        Greenwich hour angle = hour angle - east longitude
+        eg. for the VLA, longitude = -107°37'03.819" east
+        a source is overhead when its Greenwich hour angle is
+        +107.6177275 degrees
+
     Args:
         x (array-like): Array of x (ECEF) coordinates, in metres.
         y (array-like): Array of y (ECEF) coordinates, in metres.
         z (array-like): Array of z (ECEF) coordinates, in metres.
-        ha (double): Hour angle, in radians (24h == 2pi).
+        ha (double): Greenwich hour angle, in radians (24h == 2pi).
         dec (double): Declination of pointing direction, in radians.
 
     Returns:
@@ -113,6 +119,33 @@ def evaluate_station_uvw(x, y, z, ra, dec, mjd):
     z = asarray(z)
     return _pyuvwsim.evaluate_station_uvw(x, y, z, ra, dec, mjd)
 
+
+def evaluate_station_uvw_ha_dec(x, y, z, ha, dec):
+    """
+    Generate station uvw coordinates from station ECEF coordinates, pointing
+    direction and Greenwich hour angle.
+
+    Note:
+        Greenwich hour angle = hour angle - east longitude
+        eg. for the VLA, longitude = -107°37'03.819" east
+        a source is overhead when its Greenwich hour angle is
+        +107.6177275 degrees
+
+    Args:
+        x (array-like): Array of x (ECEF) coordinates, in metres.
+        y (array-like): Array of y (ECEF) coordinates, in metres.
+        z (array-like): Array of z (ECEF) coordinates, in metres.
+        ha (double): Greenwich hour angle (24h == 2pi), in radians.
+        dec (double): Declination of pointing direction, in radians.
+
+    Returns:
+        (u, v, w) tuple of station uvw coordinate arrays, in metres.
+
+    """
+    x = asarray(x)
+    y = asarray(y)
+    z = asarray(z)
+    return _pyuvwsim.evaluate_station_uvw_ha_dec(x, y, z, ha, dec)
 
 
 def datetime_to_mjd(year, month, day, hour, minute, seconds):
